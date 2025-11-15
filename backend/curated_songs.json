@@ -1,0 +1,126 @@
+{
+  "Hindi": {
+    "happiness": [
+      {"title": "Gallan Goodiyan", "artist": "Dil Dhadakne Do", "spotifyUri": "spotify:track:happy_hin_1"},
+      {"title": "Badtameez Dil", "artist": "Yeh Jawaani Hai Deewani", "spotifyUri": "spotify:track:happy_hin_2"}
+    ],
+    "sadness": [
+      {"title": "Channa Mereya", "artist": "Arijit Singh", "spotifyUri": "spotify:track:sad_hin_1"},
+      {"title": "Kabira (Encore)", "artist": "Arijit Singh", "spotifyUri": "spotify:track:sad_hin_2"}
+    ],
+    "fear": [
+      {"title": "Bhootiya Re", "artist": "Comedy Nights", "spotifyUri": "spotify:track:fear_hin_1"}
+    ],
+    "anger": [
+      {"title": "Khoon Chala", "artist": "Rang De Basanti", "spotifyUri": "spotify:track:ang_hin_1"}
+    ],
+    "disgust": [
+      {"title": "Beedi Jalaile", "artist": "Omkara", "spotifyUri": "spotify:track:dis_hin_1"}
+    ],
+    "surprise": [
+      {"title": "Khaike Paan Banaraswala", "artist": "Don", "spotifyUri": "spotify:track:sur_hin_1"}
+    ]
+  },
+  "English": {
+    "happiness": [
+      { "title": "Happy", "artist": "Pharrell Williams", "spotifyUri": "spotify:track:english_happy_1" },
+      { "title": "Can’t Stop the Feeling!", "artist": "Justin Timberlake", "spotifyUri": "spotify:track:english_happy_2" }
+    ],
+    "sadness": [
+      { "title": "Someone Like You", "artist": "Adele", "spotifyUri": "spotify:track:english_sad_1" },
+      { "title": "Fix You", "artist": "Coldplay", "spotifyUri": "spotify:track:english_sad_2" }
+    ],
+    "anger": [
+      { "title": "Break Stuff", "artist": "Limp Bizkit", "spotifyUri": "spotify:track:english_anger_1" }
+    ],
+    "fear": [
+      { "title": "Thriller", "artist": "Michael Jackson", "spotifyUri": "spotify:track:english_fear_1" }
+    ],
+    "disgust": [
+      { "title": "Smells Like Teen Spirit", "artist": "Nirvana", "spotifyUri": "spotify:track:english_disgust_1" }
+    ],
+    "surprise": [
+      { "title": "Viva La Vida", "artist": "Coldplay", "spotifyUri": "spotify:track:english_surprise_1" }
+    ]
+  },
+  "Bengali": {
+    "happiness": [
+      {"title": "Mon Majhi Re", "artist": "Arijit Singh", "spotifyUri": "spotify:track:happy_ben_1"}
+    ],
+    "sadness": [
+      {"title": "E Tumi Kemon Tumi", "artist": "Shreya Ghoshal", "spotifyUri": "spotify:track:sad_ben_1"}
+    ],
+    "fear": [
+      {"title": "Jhor Uthechhe", "artist": "Hemanta Mukherjee", "spotifyUri": "spotify:track:fear_ben_1"}
+    ],
+    "anger": [
+      {"title": "Prithibi Ta Naki", "artist": "Moheener Ghoraguli", "spotifyUri": "spotify:track:ang_ben_1"}
+    ],
+    "disgust": [
+      {"title": "Pagla Hawar Badal Dine", "artist": "Lopamudra", "spotifyUri": "spotify:track:dis_ben_1"}
+    ],
+    "surprise": [
+      {"title": "Coffee Houser Sei Adda Ta", "artist": "Manna Dey", "spotifyUri": "spotify:track:sur_ben_1"}
+    ]
+  },
+  "Marathi": {
+    "happiness": [
+      {"title": "Hi Chaal Turu Turu", "artist": "Ashok Saraf", "spotifyUri": "spotify:track:happy_mar_1"}
+    ],
+    "sadness": [
+      {"title": "Disla Ga Bai Disla", "artist": "Ajay Gogavale", "spotifyUri": "spotify:track:sad_mar_1"}
+    ],
+    "fear": [
+      {"title": "Aata Wajle Ki Baara", "artist": "Zapatlela", "spotifyUri": "spotify:track:fear_mar_1"}
+    ],
+    "anger": [
+      {"title": "Mala Jau Dya Na Ghari", "artist": "Ajay-Atul", "spotifyUri": "spotify:track:ang_mar_1"}
+    ],
+    "disgust": [
+      {"title": "Ye Go Ye Maina", "artist": "Ashok Saraf", "spotifyUri": "spotify:track:dis_mar_1"}
+    ],
+    "surprise": [
+      {"title": "Kombadi Palali", "artist": "Ajay-Atul", "spotifyUri": "spotify:track:sur_mar_1"}
+    ]
+  },
+  "Telugu": {
+    "happiness": [
+      {"title": "Butta Bomma", "artist": "Armaan Malik", "spotifyUri": "spotify:track:happy_tel_1"}
+    ],
+    "sadness": [
+      {"title": "Samajavaragamana (Sad)", "artist": "Sid Sriram", "spotifyUri": "spotify:track:sad_tel_1"}
+    ],
+    "fear": [
+      {"title": "Chikati Gadilo", "artist": "Sid Sriram", "spotifyUri": "spotify:track:fear_tel_1"}
+    ],
+    "anger": [
+      {"title": "Aathmalingam", "artist": "DSP", "spotifyUri": "spotify:track:ang_tel_1"}
+    ],
+    "disgust": [
+      {"title": "Blockbuster", "artist": "DSP", "spotifyUri": "spotify:track:dis_tel_1"}
+    ],
+    "surprise": [
+      {"title": "Vachindamma", "artist": "Sid Sriram", "spotifyUri": "spotify:track:sur_tel_1"}
+    ]
+  },
+  "Tamil": {
+    "happiness": [
+      {"title": "Vaathi Coming", "artist": "Anirudh Ravichander", "spotifyUri": "spotify:track:happy_tam_1"}
+    ],
+    "sadness": [
+      {"title": "Ennodu Nee Irundhaal", "artist": "Shreya Ghoshal", "spotifyUri": "spotify:track:sad_tam_1"}
+    ],
+    "fear": [
+      {"title": "Aalaporan Tamizhan", "artist": "AR Rahman", "spotifyUri": "spotify:track:fear_tam_1"}
+    ],
+    "anger": [
+      {"title": "Sodakku", "artist": "Anthony Daasan", "spotifyUri": "spotify:track:ang_tam_1"}
+    ],
+    "disgust": [
+      {"title": "Why This Kolaveri Di", "artist": "Dhanush", "spotifyUri": "spotify:track:dis_tam_1"}
+    ],
+    "surprise": [
+      {"title": "Petta Theme", "artist": "Anirudh", "spotifyUri": "spotify:track:sur_tam_1"}
+    ]
+  }
+}
