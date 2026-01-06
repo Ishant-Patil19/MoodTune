@@ -4,9 +4,11 @@
   background: linear-gradient(180deg, rgba(34, 114, 167, 1) 0%, rgba(13, 44, 65, 1) 100%);
   position: relative;
   /* Ensure container is tall enough to show footer at y:1727 */
-  min-height: 1787px; /* From Figma: page height */
+  min-height: 1787px;
+  /* From Figma: page height */
   overflow: visible;
-  padding-bottom: 40px; /* Add padding to ensure footer is visible */
+  padding-bottom: 40px;
+  /* Add padding to ensure footer is visible */
 }
 
 /* Header */
@@ -115,7 +117,8 @@
   box-shadow: 0px 4px 12px 6px rgba(0, 0, 0, 0.25);
   padding: 0;
   margin: 0;
-  margin-top: 10px; /* 114 - 104 (settings section y - header height) */
+  margin-top: 10px;
+  /* 114 - 104 (settings section y - header height) */
 }
 
 .settingsContent {
@@ -195,7 +198,8 @@
   color: #FFFFFF;
   width: 216px;
   height: 74.03px;
-  margin: 14.19px 0 0 0; /* 201.1 - 114.92 - 72.93 */
+  margin: 14.19px 0 0 0;
+  /* 201.1 - 114.92 - 72.93 */
 }
 
 .profileBio {
@@ -207,7 +211,8 @@
   color: #FFFFFF;
   width: 833px;
   height: 158.01px;
-  margin: 29.84px 0 0 0; /* 304.97 - 201.1 - 74.03 */
+  margin: 29.84px 0 0 0;
+  /* 304.97 - 201.1 - 74.03 */
 }
 
 .editButton {
@@ -291,7 +296,8 @@
   /* Settings container starts at y:941 from top */
   margin-top: 69px;
   min-height: 535px;
-  width: 1247px; /* Container width from Figma */
+  width: 1247px;
+  /* Container width from Figma */
   box-sizing: border-box;
 }
 
@@ -301,7 +307,8 @@
   position: absolute;
   left: 0;
   top: 0;
-  width: 100%; /* Use 100% to fill the container */
+  width: 100%;
+  /* Use 100% to fill the container */
   height: 535px;
   background: linear-gradient(161deg, rgba(60, 212, 187, 0.5) 0%, rgba(65, 67, 72, 0.5) 100%);
   border-radius: 20px;
@@ -317,8 +324,10 @@
 /* Add to Home Card - at x:66, y:69 relative to container */
 .settingCard:nth-of-type(1) {
   position: absolute;
-  left: 66px; /* Relative to container left edge */
-  top: 69px; /* Relative to settingsContainer top */
+  left: 66px;
+  /* Relative to container left edge */
+  top: 69px;
+  /* Relative to settingsContainer top */
   width: 1119px;
   height: 67px;
 }
@@ -351,7 +360,8 @@
 /* Notification Card - at x:66, y:228 relative to container */
 .settingCard:nth-of-type(2) {
   position: absolute;
-  left: 66px; /* Relative to container left edge */
+  left: 66px;
+  /* Relative to container left edge */
   top: 228px;
   width: 1119px;
   height: 67px;
@@ -385,7 +395,8 @@
 /* Feedback and Support Card - at x:66, y:384 relative to container */
 .settingCard:nth-of-type(3) {
   position: absolute;
-  left: 66px; /* Relative to container left edge */
+  left: 66px;
+  /* Relative to container left edge */
   top: 384px;
   width: 1119px;
   height: 67px;
@@ -414,6 +425,7 @@
   display: flex;
   align-items: center;
   white-space: nowrap;
+  text-decoration: none;
 }
 
 .settingCard:nth-of-type(3) .settingLabelRight {
@@ -512,11 +524,10 @@
   border-radius: 50%;
 }
 
-.toggleSwitch input:checked + .toggleSlider {
+.toggleSwitch input:checked+.toggleSlider {
   background-color: #3CD4BB;
 }
 
-.toggleSwitch input:checked + .toggleSlider:before {
+.toggleSwitch input:checked+.toggleSlider:before {
   transform: translateX(17.73px);
 }
-

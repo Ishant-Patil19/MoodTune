@@ -25,7 +25,7 @@ export default function AppExperienceSettings() {
               priority
             />
           </Link>
-          
+
           <div className={styles.searchContainer}>
             <div className={styles.searchBar}>
               <Image
@@ -39,7 +39,7 @@ export default function AppExperienceSettings() {
               <span className={styles.searchText}>Search</span>
             </div>
           </div>
-          
+
           <div className={styles.cameraIcon}>
             <Image
               src="/images/camera-icon-home.svg"
@@ -49,7 +49,7 @@ export default function AppExperienceSettings() {
               unoptimized
             />
           </div>
-          
+
           <Link href="/personalization-settings" className={styles.settingsIcon}>
             <Image
               src="/images/settings-icon.svg"
@@ -59,7 +59,7 @@ export default function AppExperienceSettings() {
               unoptimized
             />
           </Link>
-          
+
           <Link href="/edit-profile" className={styles.profileIcon}>
             <Image
               src="/images/profile-icon.svg"
@@ -76,7 +76,7 @@ export default function AppExperienceSettings() {
       <section className={styles.settingsSection}>
         <div className={styles.settingsContent}>
           <h1 className={styles.settingsTitle}>Settings</h1>
-          
+
           <div className={styles.profileSection}>
             <div className={styles.profileImageContainer}>
               <Image
@@ -88,7 +88,7 @@ export default function AppExperienceSettings() {
                 unoptimized
               />
             </div>
-            
+
             <div className={styles.profileInfo}>
               <h2 className={styles.profileName}>Emily Carter</h2>
               <p className={styles.profileUsername}>@emilytheone</p>
@@ -96,7 +96,7 @@ export default function AppExperienceSettings() {
                 Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.
               </p>
             </div>
-            
+
             <Link href="/edit-profile" className={styles.editButton}>
               Edit
             </Link>
@@ -156,7 +156,7 @@ export default function AppExperienceSettings() {
           {/* Feedback and Support Card */}
           <div className={styles.settingCard}>
             <div className={styles.settingItem}>
-              <span className={styles.settingLabel}>Feedback</span>
+              <Link href="/feedback" className={styles.settingLabel}>Feedback</Link>
               <span className={styles.settingLabelRight}>Support</span>
             </div>
           </div>
