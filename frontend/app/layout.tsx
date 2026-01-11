@@ -1,6 +1,19 @@
 import type { Metadata } from 'next'
+import { Merienda, Konkhmer_Sleokchher } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
+
+const merienda = Merienda({
+  weight: '400',
+  subsets: ['latin'],
+  variable: '--font-merienda',
+})
+
+const konkhmer = Konkhmer_Sleokchher({
+  weight: '400',
+  subsets: ['latin'],
+  variable: '--font-konkhmer',
+})
 
 export const metadata: Metadata = {
   title: 'MoodTune - Home',
@@ -19,7 +32,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
+      <body className={`${merienda.variable} ${konkhmer.variable}`}>
         <AuthProvider>
           {children}
         </AuthProvider>

@@ -362,11 +362,29 @@
 }
 
 /* Footer */
+/* Footer */
 .footer {
   width: 100%;
-  padding: 40px 0;
+  height: 84px;
+  /* Based on visual estimation or standard footer height */
+  background: linear-gradient(180deg, rgba(8, 32, 50, 1) 0%, rgba(13, 44, 65, 1) 100%);
+  /* Make it slightly darker/distinct if needed, or keep existing main bg flow */
+  /* Actually the image shows it's just at the bottom, likely same bg or transparent overlay */
+  /* Re-using the main container gradient implicitly, but let's make sure it's positioned right */
+  position: relative;
   display: flex;
   justify-content: center;
+  align-items: center;
+  padding: 0;
+}
+
+.footerContent {
+  width: 100%;
+  max-width: 1440px;
+  padding: 0 62px;
+  /* Align with other content */
+  display: flex;
+  justify-content: space-between;
   align-items: center;
 }
 
@@ -376,6 +394,21 @@
   font-size: 20px;
   line-height: 1.297em;
   color: #FFFFFF;
-  text-align: center;
+  text-align: left;
 }
 
+.footerLinks {
+  display: flex;
+  gap: 40px;
+  /* Adjust spacing as needed */
+}
+
+.footerLink {
+  font-family: 'Lusitana', serif;
+  font-weight: 400;
+  font-size: 15px;
+  /* Looks smaller than copyright */
+  line-height: 1.297em;
+  color: #FFFFFF;
+  text-decoration: none;
+}

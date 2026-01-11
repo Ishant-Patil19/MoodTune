@@ -1,0 +1,279 @@
+.container {
+    width: 100%;
+    min-height: 100vh;
+    /* Surrounding Blue Background */
+    background-color: #B5C0F5;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    /* or stretch? */
+    position: relative;
+    font-family: 'Lusitana', serif;
+    padding: 40px 0;
+    /* Add space top and bottom */
+}
+
+.pageCard {
+    width: 90%;
+    /* Leave gaps on sides */
+    max-width: 1500px;
+    /* Max width to keep sidebars visible */
+    min-height: 85vh;
+    /* Ensure it takes up good height but allows margins */
+    /* Content Pink Background */
+    background-color: #E6C5C5;
+    background: linear-gradient(180deg, #F7D1D4 0%, #917B7C 100%);
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 0;
+    /* Remove bottom padding so footer touches edge */
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    /* Subtle shadow for depth */
+    border-radius: 30px;
+    /* Rounded corners */
+    overflow: hidden;
+    /* Clip content to corners */
+}
+
+.header {
+    padding-top: 60px;
+    padding-bottom: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.hamburger {
+    position: absolute;
+    left: 80px;
+    top: 65px;
+    cursor: pointer;
+    width: 35px;
+    height: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.hamburger div {
+    width: 100%;
+    height: 4px;
+    background-color: #4FB09D;
+    /* Teal color from logo/design */
+    border-radius: 4px;
+}
+
+.title {
+    font-family: var(--font-konkhmer), cursive;
+    font-size: 52px;
+    /* Larger title */
+    font-weight: 700;
+    color: #000000;
+    text-align: center;
+    margin: 0;
+}
+
+.content {
+    max-width: 900px;
+    /* Tighter width for better reading flow */
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 40px;
+    color: #000000;
+    flex: 1;
+    /* Push footer to bottom */
+}
+
+.introText {
+    font-size: 20px;
+    line-height: 1.5;
+    margin-bottom: 40px;
+    font-style: italic;
+    text-align: left;
+}
+
+.sectionTitle {
+    font-size: 28px;
+    font-weight: 400;
+    /* Headers look normal weight in Merienda sometimes */
+    margin-bottom: 10px;
+    font-family: var(--font-merienda), cursive;
+    color: #000000;
+}
+
+.missionText {
+    font-size: 20px;
+    font-style: italic;
+    margin-bottom: 40px;
+}
+
+.list {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 40px;
+}
+
+.listItem {
+    font-size: 20px;
+    margin-bottom: 15px;
+    position: relative;
+    padding-left: 20px;
+    line-height: 1.4;
+}
+
+.listItem::before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: #000000;
+    font-weight: bold;
+}
+
+.visionText {
+    font-size: 20px;
+    font-style: italic;
+    margin-bottom: 40px;
+}
+
+.teamText {
+    font-size: 20px;
+    font-style: italic;
+    margin-bottom: 60px;
+}
+
+.teamGrid {
+    display: grid;
+    grid-template-columns: 1fr 1px 1fr;
+    /* Left, Divider, Right */
+    gap: 40px;
+    /* Reduced gap for tighter look near divider */
+    position: relative;
+    align-items: center;
+}
+
+/* Vertical divider line */
+.divider {
+    width: 1px;
+    background-color: #666;
+    height: 100%;
+    margin: 0 auto;
+}
+
+/* Wrapper for column content to allow easy placement */
+.teamColumn {
+    display: flex;
+    flex-direction: column;
+    gap: 80px;
+    /* Increased vertical space between members */
+    justify-content: center;
+}
+
+.teamMember {
+    display: flex;
+    align-items: center;
+    gap: 50px;
+    /* Increased from 30px */
+    width: 100%;
+    /* Ensure full width for alignment to work */
+}
+
+.teamMemberLeft {
+    justify-content: flex-start;
+    /* Align to the LEFT (Outer side for Left Column) */
+    text-align: left;
+    /* Text aligns naturally next to image */
+}
+
+.teamMemberRight {
+    justify-content: flex-end;
+    /* Align to the RIGHT (Outer side for Right Column) */
+    text-align: right;
+    /* Text aligns naturally next to image */
+}
+
+.memberImageContainer {
+    width: 150px;
+    /* Slightly larger logos? Image looks big. */
+    height: 150px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 4px solid #fff;
+    /* White border */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    background: white;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.memberImage {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.memberInfo {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    /* Ensure text is vertically centered with image */
+}
+
+.memberName {
+    font-weight: 700;
+    font-size: 20px;
+    margin-bottom: 5px;
+    color: #000000;
+}
+
+.memberRole {
+    font-size: 18px;
+    color: #333;
+    font-weight: 500;
+}
+
+/* Footer */
+.footer {
+    width: 100%;
+    padding: 60px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 3cm;
+    /* Push to bottom */
+    background-color: #A48F90;
+    /* Darker semi-transparent shade to mimic image */
+}
+
+.footerContent {
+    width: 100%;
+    max-width: 1000px;
+    /* Match content width */
+    padding: 0 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.copyright {
+    font-family: 'Lusitana', serif;
+    font-weight: 400;
+    font-size: 14px;
+    color: #000000;
+    text-align: left;
+}
+
+.footerLinks {
+    display: flex;
+    gap: 30px;
+}
+
+.footerLink {
+    font-family: 'Lusitana', serif;
+    font-weight: 400;
+    font-size: 14px;
+    color: #000000;
+    text-decoration: none;
+}

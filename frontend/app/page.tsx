@@ -15,7 +15,7 @@ export default function Home() {
     // Check for Spotify callback code in URL
     const urlParams = new URLSearchParams(window.location.search)
     const spotifyCode = urlParams.get('spotify_code')
-    
+
     if (spotifyCode) {
       // If authenticated, redirect to home page with the code
       if (isAuthenticated) {
@@ -31,7 +31,7 @@ export default function Home() {
         return
       }
     }
-    
+
     // If authenticated and no callback, redirect to home
     if (isAuthenticated && !authLoading) {
       router.push('/home')
@@ -54,21 +54,21 @@ export default function Home() {
               priority
             />
           </Link>
-          
+
           <div className={styles.searchContainer}>
             <div className={styles.searchBar}>
-                <Image
-                  src="/images/search-icon.png"
-                  alt="Search"
-                  width={51}
-                  height={30}
-                  className={styles.searchIcon}
-                  unoptimized
-                />
+              <Image
+                src="/images/search-icon.png"
+                alt="Search"
+                width={51}
+                height={30}
+                className={styles.searchIcon}
+                unoptimized
+              />
               <span className={styles.searchText}>Search</span>
             </div>
           </div>
-          
+
           <div className={styles.cameraIcon}>
             <Image
               src="/images/camera-icon.png"
@@ -78,7 +78,7 @@ export default function Home() {
               unoptimized
             />
           </div>
-          
+
           <Link href="/signup" className={styles.signupButton}>
             Signup
           </Link>
@@ -341,9 +341,17 @@ export default function Home() {
 
       {/* Footer */}
       <footer className={styles.footer}>
-        <p className={styles.copyright}>
-          Copyright © 2025 MoodTune. All Rights Reserved.
-        </p>
+        <div className={styles.footerContent}>
+          <p className={styles.copyright}>
+            Copyright © 2025 MoodTune. All Rights Reserved.
+          </p>
+          <div className={styles.footerLinks}>
+            <Link href="/support" className={styles.footerLink}>Support</Link>
+            <Link href="/about-us" className={styles.footerLink}>About Us</Link>
+            <Link href="/privacy-policy" className={styles.footerLink}>Privacy Policy</Link>
+            <Link href="/terms-conditions" className={styles.footerLink}>Terms & Conditions</Link>
+          </div>
+        </div>
       </footer>
     </div>
   )

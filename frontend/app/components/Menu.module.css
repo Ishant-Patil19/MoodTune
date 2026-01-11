@@ -1,0 +1,102 @@
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.4);
+    /* Slight dimming behind? Or just the menu? Image shows just the menu card, seemingly floating or taking up space. I'll stick to a card overlay */
+    z-index: 1000;
+    display: flex;
+    justify-content: flex-start;
+    /* Align to left? Or typically hamburger menus slide from left/right or are dropdowns. 
+                                  The image shows a card shape. I'll position it near the hamburger location or centered-ish.
+                                  Actually, usually hamburger opens a drawer. 
+                                  Image looks like a standalone card menu.
+                                  I will position it absolute top-left or fixed. */
+}
+
+.menuContainer {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    /* Position it like a dropdown from the top-left area */
+    width: 300px;
+    background: linear-gradient(180deg, #7F9EB2 0%, #3B7095 100%);
+    /* Approx blue/teal gradient */
+    border-radius: 20px 20px 20px 20px;
+    padding: 30px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.closeButton {
+    position: absolute;
+    top: -15px;
+    right: -15px;
+    width: 32px;
+    height: 32px;
+    background-color: #E0F2F1;
+    /* Light cyan/white pill */
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.closeIcon {
+    font-size: 24px;
+    color: #88C0D0;
+    /* Light blue/teal text */
+    line-height: 1;
+    margin-bottom: 2px;
+    /* Center adjustment */
+}
+
+.nav {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.navItem {
+    color: #FFFFFF;
+    font-size: 22px;
+    font-family: sans-serif;
+    /* Clean font */
+    font-weight: 500;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 30px;
+    /* Pill shape */
+    transition: background-color 0.2s;
+    cursor: pointer;
+}
+
+.navItem:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.active {
+    background-color: rgba(100, 200, 180, 0.4);
+    /* Teal transparent pill for Active Home */
+    font-weight: 600;
+}
