@@ -4,7 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { spotifyAPI } from '@/lib/api'
+import { spotifyAPI, authAPI, settingsAPI } from '@/lib/api'
 import { useRouter } from 'next/navigation'
 import styles from './page.module.css'
 
@@ -14,6 +14,7 @@ export default function AccountIntegrationSettings() {
   const [spotifyLinked, setSpotifyLinked] = useState(false)
   const [googleLinked, setGoogleLinked] = useState(false)
   const [isLinking, setIsLinking] = useState(false)
+  const [profile, setProfile] = useState<any>(null)
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -24,8 +25,64 @@ export default function AccountIntegrationSettings() {
   useEffect(() => {
     if (user) {
       setSpotifyLinked(user.spotifyLinked)
+      fetchProfile()
     }
   }, [user])
+
+  // Refetch profile when page becomes visible (e.g., when returning from edit profile)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user) {
+        fetchProfile()
+      }
+    }
+
+    const handleFocus = () => {
+      if (user) {
+        fetchProfile()
+      }
+    }
+
+    window.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleFocus)
+
+    return () => {
+      window.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [user])
+
+  const fetchProfile = async () => {
+    try {
+      const profileData = await authAPI.getProfile()
+      setProfile(profileData)
+    } catch (error) {
+      console.error('Failed to fetch profile:', error)
+    }
+  }
+
+  const getDisplayName = () => {
+    if (profile?.first_name) return profile.first_name
+    if (profile?.username) return profile.username
+    if (user?.email) return user.email.split('@')[0]
+    return 'User'
+  }
+
+  const getUsername = () => {
+    if (profile?.username) return `@${profile.username}`
+    if (user?.email) return `@${user.email.split('@')[0]}`
+    return '@user'
+  }
+
+  const getProfilePicture = () => {
+    if (profile?.profile_picture_url) return profile.profile_picture_url
+    return '/images/profile-emily.png'
+  }
+
+  const getBio = () => {
+    if (profile?.bio) return profile.bio
+    return 'No bio yet. Click Edit to add one!'
+  }
 
   useEffect(() => {
     // Check for Spotify callback code in URL
@@ -55,9 +112,16 @@ export default function AccountIntegrationSettings() {
 
   const handleSpotifyLink = async () => {
     if (spotifyLinked) {
-      // Unlink Spotify (you may want to add an API endpoint for this)
-      setSpotifyLinked(false)
-      alert('Spotify account unlinked')
+      // Unlink Spotify
+      try {
+        await settingsAPI.unlinkSpotify()
+        await refreshUser()
+        setSpotifyLinked(false)
+        alert('Spotify account unlinked successfully')
+      } catch (error: any) {
+        console.error('Failed to unlink Spotify:', error)
+        alert(error.message || 'Failed to unlink Spotify account')
+      }
       return
     }
 
@@ -88,6 +152,12 @@ export default function AccountIntegrationSettings() {
               unoptimized
               priority
             />
+          </Link>
+          
+          {/* Back to Home Button */}
+          <Link href="/home" className={styles.backButton}>
+            <span style={{ marginRight: '8px', fontSize: '18px' }}>←</span>
+            Back to Home
           </Link>
           
           <div className={styles.searchContainer}>
@@ -126,10 +196,11 @@ export default function AccountIntegrationSettings() {
           
           <Link href="/edit-profile" className={styles.profileIcon}>
             <Image
-              src="/images/profile-icon.svg"
+              src={getProfilePicture()}
               alt="Profile"
               width={53}
               height={53}
+              className={styles.profileIconImage}
               unoptimized
             />
           </Link>
@@ -144,8 +215,8 @@ export default function AccountIntegrationSettings() {
           <div className={styles.profileSection}>
             <div className={styles.profileImageContainer}>
               <Image
-                src="/images/profile-emily.png"
-                alt="Emily Carter"
+                src={getProfilePicture()}
+                alt={getDisplayName()}
                 width={331}
                 height={332}
                 className={styles.profileImage}
@@ -154,10 +225,10 @@ export default function AccountIntegrationSettings() {
             </div>
             
             <div className={styles.profileInfo}>
-              <h2 className={styles.profileName}>Emily Carter</h2>
-              <p className={styles.profileUsername}>@emilytheone</p>
+              <h2 className={styles.profileName}>{getDisplayName()}</h2>
+              <p className={styles.profileUsername}>{getUsername()}</p>
               <p className={styles.profileBio}>
-                Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.
+                {getBio()}
               </p>
             </div>
             

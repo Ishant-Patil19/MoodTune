@@ -45,6 +45,36 @@
   pointer-events: none;
 }
 
+/* Back to Home Button */
+.backButton {
+  position: absolute;
+  left: 200px;
+  top: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  color: #FFFFFF;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+}
+
+.backButton:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
 .searchContainer {
   position: absolute;
   left: 468px;
@@ -313,6 +343,7 @@
 .settingCard {
   position: relative;
   z-index: 1;
+  isolation: isolate;
 }
 
 /* Theme Card - at x:66, y:69 relative to container */
@@ -322,6 +353,12 @@
   top: 69px; /* Relative to settingsContainer top */
   width: 1119px;
   height: 67px;
+  z-index: 1;
+}
+
+/* When theme dropdown is open, increase z-index to appear above language card */
+.settingCard:nth-of-type(1).dropdownOpen {
+  z-index: 1001 !important;
 }
 
 .settingCard:nth-of-type(1) .settingItem {
@@ -353,6 +390,8 @@
   align-items: center;
   gap: 0;
   margin-left: auto;
+  position: relative;
+  z-index: 1;
 }
 
 .settingCard:nth-of-type(1) .settingText {
@@ -384,6 +423,12 @@
   top: 227.66px;
   width: 1121.95px;
   height: 85.29px;
+  z-index: 2;
+}
+
+/* When language dropdown is open, increase z-index to appear above theme card */
+.settingCard:nth-of-type(2).dropdownOpen {
+  z-index: 1001 !important;
 }
 
 .settingCard:nth-of-type(2) .settingItem {
@@ -417,6 +462,8 @@
   align-items: center;
   gap: 0;
   margin-left: auto;
+  position: relative;
+  z-index: 2;
 }
 
 .settingCard:nth-of-type(2) .settingText {
@@ -504,6 +551,77 @@
 
 .changeButton:hover {
   opacity: 0.7;
+}
+
+/* Dropdown Menu */
+.dropdownMenu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  min-width: 150px;
+  max-height: 300px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.dropdownItem {
+  padding: 12px 20px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-size: 18px;
+  color: #131927;
+  transition: background 0.2s ease;
+}
+
+.dropdownItem:hover {
+  background: #f0f0f0;
+}
+
+/* Modal Styles */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.modalContent {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  position: relative;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.closeButton {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profileIconImage {
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 /* Footer */

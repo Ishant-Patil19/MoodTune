@@ -89,6 +89,43 @@ export const authAPI = {
     }
     return response.json();
   },
+
+  getProfile: async () => {
+    const response = await apiRequest('/api/profile');
+    if (!response.ok) {
+      throw new Error('Failed to fetch profile');
+    }
+    return response.json();
+  },
+
+  updateProfile: async (profileData: {
+    first_name?: string;
+    username?: string;
+    phone_number?: string;
+    bio?: string;
+  }) => {
+    const response = await apiRequest('/api/profile', {
+      method: 'PUT',
+      body: JSON.stringify(profileData),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to update profile');
+    }
+    return response.json();
+  },
+
+  uploadProfilePicture: async (imageData: string) => {
+    const response = await apiRequest('/api/profile/picture', {
+      method: 'POST',
+      body: JSON.stringify({ image: imageData }),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to upload profile picture');
+    }
+    return response.json();
+  },
 };
 
 // Emotion Detection APIs
@@ -280,26 +317,119 @@ export const historyAPI = {
 
 // Featured Content APIs
 export const featuredAPI = {
-  getPlaylists: async () => {
-    const response = await apiRequest('/api/featured-playlists');
+  getPlaylists: async (language?: string) => {
+    const params = new URLSearchParams();
+    if (language) params.append('language', language);
+    const url = params.toString() ? `/api/featured-playlists?${params.toString()}` : '/api/featured-playlists';
+    const response = await apiRequest(url);
     if (!response.ok) {
       throw new Error('Failed to fetch featured playlists');
     }
     return response.json();
   },
 
-  getTrendingSongs: async () => {
-    const response = await apiRequest('/api/trending-songs');
+  getTrendingSongs: async (language?: string) => {
+    const params = new URLSearchParams();
+    if (language) params.append('language', language);
+    const url = params.toString() ? `/api/trending-songs?${params.toString()}` : '/api/trending-songs';
+    const response = await apiRequest(url);
     if (!response.ok) {
       throw new Error('Failed to fetch trending songs');
     }
     return response.json();
   },
 
-  getArtists: async () => {
-    const response = await apiRequest('/api/artists');
+  getArtists: async (language?: string) => {
+    const params = new URLSearchParams();
+    if (language) {
+      params.append('language', language);
+      console.log('[getArtists API] Requesting artists with language:', language);
+    } else {
+      console.log('[getArtists API] No language provided, using default');
+    }
+    const url = params.toString() ? `/api/artists?${params.toString()}` : '/api/artists';
+    const response = await apiRequest(url);
     if (!response.ok) {
       throw new Error('Failed to fetch artists');
+    }
+    const data = await response.json();
+    console.log('[getArtists API] Received', data.length, 'artists');
+    return data;
+  },
+};
+
+// Settings APIs
+export const settingsAPI = {
+  getPreferences: async () => {
+    const response = await apiRequest('/api/settings/preferences');
+    if (!response.ok) {
+      throw new Error('Failed to fetch preferences');
+    }
+    return response.json();
+  },
+
+  updatePreferences: async (preferences: {
+    theme?: string;
+    language?: string;
+    camera_access_enabled?: boolean;
+    notifications_enabled?: boolean;
+    add_to_home_enabled?: boolean;
+  }) => {
+    const response = await apiRequest('/api/settings/preferences', {
+      method: 'PUT',
+      body: JSON.stringify(preferences),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to update preferences');
+    }
+    return response.json();
+  },
+
+  changePassword: async (currentPassword: string, newPassword: string) => {
+    const response = await apiRequest('/api/settings/password', {
+      method: 'PUT',
+      body: JSON.stringify({
+        current_password: currentPassword,
+        new_password: newPassword,
+      }),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to change password');
+    }
+    return response.json();
+  },
+
+  clearHistory: async () => {
+    const response = await apiRequest('/api/settings/history/clear', {
+      method: 'DELETE',
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to clear history');
+    }
+    return response.json();
+  },
+
+  deleteAccount: async () => {
+    const response = await apiRequest('/api/settings/account/delete', {
+      method: 'DELETE',
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to delete account');
+    }
+    return response.json();
+  },
+
+  unlinkSpotify: async () => {
+    const response = await apiRequest('/api/settings/spotify/unlink', {
+      method: 'DELETE',
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to unlink Spotify');
     }
     return response.json();
   },

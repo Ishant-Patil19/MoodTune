@@ -4,7 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { emotionAPI, musicAPI, spotifyAPI, featuredAPI } from '@/lib/api'
+import { emotionAPI, musicAPI, spotifyAPI, featuredAPI, settingsAPI } from '@/lib/api'
 import { useRouter } from 'next/navigation'
 import HorizontalCarousel from '@/components/HorizontalCarousel'
 import MusicPlayer from '@/components/MusicPlayer'
@@ -46,6 +46,10 @@ export default function HomeAfterLogin() {
   const [trendingSongs, setTrendingSongs] = useState<any[]>([])
   const [artists, setArtists] = useState<any[]>([])
   const [loadingFeatured, setLoadingFeatured] = useState(true)
+  const [userLanguage, setUserLanguage] = useState<string | null>(null) // Start with null to indicate not loaded yet
+  const fetchingLanguageRef = useRef<boolean>(false)
+  const hasFetchedContentRef = useRef<string>('')
+  const languageLoadedRef = useRef<boolean>(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const searchBarRef = useRef<HTMLDivElement>(null)
@@ -54,7 +58,7 @@ export default function HomeAfterLogin() {
   const [showPlayer, setShowPlayer] = useState(false)
   const [playQueue, setPlayQueue] = useState<Song[]>([])
 
-  const languages = ['Hindi', 'English', 'Bengali', 'Marathi', 'Telugu', 'Tamil']
+  const languages = ['Hindi', 'English', 'Bengali', 'Marathi', 'Telugu', 'Tamil', 'Global']
   
   // Mental well-being triggers (negative emotions)
   const MENTAL_WELLBEING_TRIGGERS = ["sad", "depressed", "angry", "stressed", "fear", "anxious"]
@@ -65,19 +69,83 @@ export default function HomeAfterLogin() {
     }
   }, [isAuthenticated, authLoading, router])
 
-  // Fetch featured content on mount
+  // Fetch user language preference on mount
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
-      fetchFeaturedContent()
-      // Also fetch trending songs for Recommended Songs section
-      fetchTrendingForRecommended()
+      fetchUserLanguage()
     }
   }, [isAuthenticated, authLoading])
 
+  // Fetch featured content when language is available
+  // Only fetch after language has been loaded from API (not default)
+  useEffect(() => {
+    if (isAuthenticated && !authLoading && userLanguage && languageLoadedRef.current) {
+      // Only fetch if language has actually changed
+      if (hasFetchedContentRef.current !== userLanguage) {
+        console.log('[Content] Fetching for language:', userLanguage)
+        hasFetchedContentRef.current = userLanguage
+        fetchFeaturedContent()
+        // Also fetch trending songs for Recommended Songs section
+        if (!detectedEmotion) {
+          fetchTrendingForRecommended()
+        }
+      }
+    }
+  }, [isAuthenticated, authLoading, userLanguage])
+
+  // Fetch language preference from user settings
+  const fetchUserLanguage = async () => {
+    // Prevent multiple simultaneous calls
+    if (fetchingLanguageRef.current) {
+      return
+    }
+    
+    try {
+      fetchingLanguageRef.current = true
+      const prefs = await settingsAPI.getPreferences()
+      const newLanguage = prefs.language || 'English'
+      
+      console.log('[Language] Fetched from API:', newLanguage)
+      
+      // Mark language as loaded and update state
+      languageLoadedRef.current = true
+      setUserLanguage(newLanguage)
+    } catch (error) {
+      console.error('Failed to fetch language preference:', error)
+      // Set default only if we don't have one yet
+      if (!languageLoadedRef.current) {
+        languageLoadedRef.current = true
+        setUserLanguage('English')
+      }
+    } finally {
+      fetchingLanguageRef.current = false
+    }
+  }
+
+  // Refresh language when window regains focus (e.g., returning from settings)
+  // Add delay to ensure backend has saved the preference
+  useEffect(() => {
+    const handleFocus = () => {
+      if (isAuthenticated && !authLoading) {
+        // Delay to ensure backend has processed the update
+        setTimeout(() => {
+          fetchUserLanguage()
+        }, 500)
+      }
+    }
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [isAuthenticated, authLoading])
+
   const fetchTrendingForRecommended = async () => {
+    if (!userLanguage) {
+      console.warn('[fetchTrendingForRecommended] No language set, skipping fetch')
+      return
+    }
+    
     try {
       setLoadingRecommendations(true)
-      const songs = await featuredAPI.getTrendingSongs()
+      const songs = await featuredAPI.getTrendingSongs(userLanguage)
       // Set trending songs as recommendations
       setRecommendations(songs.slice(0, 20)) // Limit to 20 trending songs
     } catch (error) {
@@ -89,13 +157,29 @@ export default function HomeAfterLogin() {
   }
 
   const fetchFeaturedContent = async () => {
+    if (!userLanguage) {
+      console.warn('[fetchFeaturedContent] No language set, skipping fetch')
+      return
+    }
+    
     try {
       setLoadingFeatured(true)
+      console.log('[fetchFeaturedContent] Fetching with language:', userLanguage)
       const [playlists, songs, artistsData] = await Promise.all([
-        featuredAPI.getPlaylists().catch(() => []),
-        featuredAPI.getTrendingSongs().catch(() => []),
-        featuredAPI.getArtists().catch(() => [])
+        featuredAPI.getPlaylists(userLanguage).catch((e) => {
+          console.error('Error fetching playlists:', e)
+          return []
+        }),
+        featuredAPI.getTrendingSongs(userLanguage).catch((e) => {
+          console.error('Error fetching trending songs:', e)
+          return []
+        }),
+        featuredAPI.getArtists(userLanguage).catch((e) => {
+          console.error('Error fetching artists:', e)
+          return []
+        })
       ])
+      console.log('[fetchFeaturedContent] Received artists:', artistsData.length, 'for language:', userLanguage)
       setFeaturedPlaylists(playlists)
       setTrendingSongs(songs)
       setArtists(artistsData)
@@ -157,7 +241,25 @@ export default function HomeAfterLogin() {
     }
   }
 
-  const handleAllowCamera = async () => {
+  // Check camera permission status
+  const checkCameraPermission = async (): Promise<'granted' | 'denied' | 'prompt'> => {
+    try {
+      // Check if Permissions API is available
+      if (navigator.permissions && navigator.permissions.query) {
+        const result = await navigator.permissions.query({ name: 'camera' as PermissionName })
+        return result.state as 'granted' | 'denied' | 'prompt'
+      }
+      // If Permissions API is not available, return 'prompt' to show modal
+      return 'prompt'
+    } catch (error) {
+      // If permission query fails, return 'prompt' to show modal
+      console.error('Error checking camera permission:', error)
+      return 'prompt'
+    }
+  }
+
+  // Start camera stream directly (used when permission is already granted)
+  const startCameraStream = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
@@ -167,7 +269,6 @@ export default function HomeAfterLogin() {
         } 
       })
       streamRef.current = stream
-      setShowCameraModal(false)
       // Small delay to ensure modal closes before showing video
       setTimeout(() => {
         setIsCapturing(true)
@@ -182,6 +283,27 @@ export default function HomeAfterLogin() {
       console.error('Camera access denied:', error)
       alert('Camera access is required for emotion detection')
       setShowCameraModal(false)
+    }
+  }
+
+  const handleAllowCamera = async () => {
+    setShowCameraModal(false)
+    await startCameraStream()
+  }
+
+  // Handle camera icon click - check permission first
+  const handleCameraIconClick = async () => {
+    const permissionStatus = await checkCameraPermission()
+    
+    if (permissionStatus === 'granted') {
+      // Permission already granted, start camera directly
+      await startCameraStream()
+    } else if (permissionStatus === 'denied') {
+      // Permission denied, show alert
+      alert('Camera access has been denied. Please enable camera access in your browser settings to use emotion detection.')
+    } else {
+      // Permission not determined yet, show modal
+      setShowCameraModal(true)
     }
   }
 
@@ -431,14 +553,14 @@ export default function HomeAfterLogin() {
   // Reset to trending songs when emotion is cleared
   useEffect(() => {
     // If no emotion detected and no language selected, show trending songs
-    if (!detectedEmotion && !selectedLanguage) {
+    if (!detectedEmotion && !selectedLanguage && userLanguage) {
       // Clear recommendations and wellbeing mode, then fetch trending songs
       setRecommendations([])
       setWellbeingMode(false)
       fetchTrendingForRecommended()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [detectedEmotion, selectedLanguage])
+  }, [detectedEmotion, selectedLanguage, userLanguage])
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -638,7 +760,7 @@ export default function HomeAfterLogin() {
                     {loadingSuggestions ? (
                       <div style={{ padding: '1rem', textAlign: 'center', color: '#666' }}>
                         Searching...
-                      </div>
+            </div>
                     ) : searchSuggestions.length > 0 ? (
                       searchSuggestions.map((suggestion, index) => (
                         <div
@@ -721,10 +843,10 @@ export default function HomeAfterLogin() {
           
           <div 
             className={styles.cameraIcon} 
-            onClick={(e) => {
+            onClick={async (e) => {
               e.preventDefault()
               e.stopPropagation()
-              setShowCameraModal(true)
+              await handleCameraIconClick()
             }}
             style={{ zIndex: 300, pointerEvents: 'auto' }}
           >
@@ -789,7 +911,7 @@ export default function HomeAfterLogin() {
             cursor: 'pointer',
             transition: 'transform 0.2s ease'
           }}
-          onClick={() => setShowCameraModal(true)}
+          onClick={handleCameraIconClick}
           onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
           onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
           >
@@ -850,12 +972,12 @@ export default function HomeAfterLogin() {
               )}
             </div>
             <button
-              onClick={() => {
+              onClick={async () => {
                 setDetectedEmotion(null)
                 setSelectedLanguage('')
                 setRecommendations([])
                 setWellbeingMode(false)
-                setShowCameraModal(true)
+                await handleCameraIconClick()
               }}
               style={{
                 padding: '0.5rem 1rem',
@@ -1039,57 +1161,57 @@ export default function HomeAfterLogin() {
             <div style={{ padding: '2rem', textAlign: 'center', color: 'white' }}>Loading trending songs...</div>
           </section>
         ) : (
-          <section className={styles.section}>
-            <h2 className={styles.sectionTitle}>Recommended Songs</h2>
-            <div className={styles.featuredSongContainer}>
-              <div className={styles.featuredSongImage}>
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Recommended Songs</h2>
+          <div className={styles.featuredSongContainer}>
+            <div className={styles.featuredSongImage}>
+              <Image
+                src="/images/featured-song-home.png"
+                alt="Featured Song"
+                width={1170}
+                height={331}
+                className={styles.featuredImage}
+                unoptimized
+                priority
+              />
+              <div className={styles.playButtonOverlay}>
                 <Image
-                  src="/images/featured-song-home.png"
-                  alt="Featured Song"
-                  width={1170}
-                  height={331}
-                  className={styles.featuredImage}
+                  src="/images/play-icon-home.svg"
+                  alt="Play"
+                  width={42}
+                  height={42}
+                  className={styles.playIcon}
                   unoptimized
-                  priority
                 />
-                <div className={styles.playButtonOverlay}>
-                  <Image
-                    src="/images/play-icon-home.svg"
-                    alt="Play"
-                    width={42}
-                    height={42}
-                    className={styles.playIcon}
-                    unoptimized
-                  />
-                </div>
               </div>
-              <div className={styles.featuredSongInfo}>
-                <p className={styles.featuredSongText}>
+            </div>
+            <div className={styles.featuredSongInfo}>
+              <p className={styles.featuredSongText}>
                   {detectedEmotion && !selectedLanguage 
                     ? "Please select a language to get personalized recommendations!"
                     : "Click the camera icon to detect your mood and get personalized recommendations!"
                   }
-                </p>
-              </div>
+              </p>
             </div>
-            <div className={styles.navArrow}>
-              <Image
-                src="/images/nav-arrow-1.png"
-                alt="Next"
-                width={70}
-                height={30}
-                unoptimized
-              />
-            </div>
-          </section>
+          </div>
+          <div className={styles.navArrow}>
+            <Image
+              src="/images/nav-arrow-1.png"
+              alt="Next"
+              width={70}
+              height={30}
+              unoptimized
+            />
+          </div>
+        </section>
         )}
 
         {/* Artist List Section */}
         {loadingFeatured ? (
-          <section className={styles.section}>
-            <h2 className={styles.sectionTitle}>Artist List</h2>
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Artist List</h2>
             <div style={{ padding: '2rem', textAlign: 'center', color: 'white' }}>Loading artists...</div>
-          </section>
+        </section>
         ) : (
           <HorizontalCarousel
             title="Artist List"
@@ -1105,10 +1227,10 @@ export default function HomeAfterLogin() {
 
         {/* Industry Section (Trending Songs) */}
         {loadingFeatured ? (
-          <section className={styles.section}>
-            <h2 className={styles.sectionTitle}>Industry</h2>
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Industry</h2>
             <div style={{ padding: '2rem', textAlign: 'center', color: 'white' }}>Loading trending songs...</div>
-          </section>
+        </section>
         ) : (
           <HorizontalCarousel
             title="Industry"
@@ -1126,10 +1248,10 @@ export default function HomeAfterLogin() {
 
         {/* Playlists Section */}
         {loadingFeatured ? (
-          <section className={styles.section}>
-            <h2 className={styles.sectionTitle}>Playlists</h2>
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Playlists</h2>
             <div style={{ padding: '2rem', textAlign: 'center', color: 'white' }}>Loading playlists...</div>
-          </section>
+        </section>
         ) : (
           <HorizontalCarousel
             title="Playlists"
@@ -1205,7 +1327,7 @@ export default function HomeAfterLogin() {
           }}>
             <h2 style={{ margin: '0 0 0.5rem 0', fontSize: '1.5rem' }}>📸 Capture Your Emotion</h2>
             <p style={{ margin: 0, opacity: 0.8 }}>Position your face in the frame and click Capture</p>
-          </div>
+    </div>
           
           <div style={{
             position: 'relative',

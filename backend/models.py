@@ -12,6 +12,20 @@ class User(db.Model):
     consent_given = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # Profile fields
+    first_name = db.Column(db.String(120))
+    username = db.Column(db.String(120), unique=True)
+    phone_number = db.Column(db.String(20))
+    bio = db.Column(db.Text)
+    profile_picture_url = db.Column(db.String(500))
+
+    # Preferences
+    theme = db.Column(db.String(20), default='light')  # 'light' or 'dark'
+    language = db.Column(db.String(50), default='English')
+    camera_access_enabled = db.Column(db.Boolean, default=True)
+    notifications_enabled = db.Column(db.Boolean, default=True)
+    add_to_home_enabled = db.Column(db.Boolean, default=False)
+
     # Spotify fields
     spotify_id = db.Column(db.String(120), unique=True)
     spotify_display_name = db.Column(db.String(120))

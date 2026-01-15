@@ -45,6 +45,36 @@
   pointer-events: none;
 }
 
+/* Back to Home Button */
+.backButton {
+  position: absolute;
+  left: 200px;
+  top: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  color: #FFFFFF;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+}
+
+.backButton:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
 .searchContainer {
   position: absolute;
   left: 468px;
@@ -381,6 +411,36 @@
   display: flex;
   align-items: center;
   white-space: nowrap;
+}
+
+.settingCard:nth-of-type(2) .changeButton {
+  width: 120px;
+  height: 60px;
+  background: transparent;
+  border: none;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 32px;
+  line-height: 2.09375em;
+  color: #131927;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transition: opacity 0.3s ease;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.settingCard:nth-of-type(2) .changeButton:hover {
+  opacity: 0.7;
+}
+
+.profileIconImage {
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 /* Delete Account Card - at x:66, y:384 relative to container */

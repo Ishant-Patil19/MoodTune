@@ -79,6 +79,11 @@ def get_me():
     return jsonify({
         "id": user.id,
         "email": user.email,
+        "first_name": user.first_name,
+        "username": user.username,
+        "phone_number": user.phone_number,
+        "bio": user.bio,
+        "profile_picture_url": user.profile_picture_url,
         "spotifyLinked": bool(user.spotify_access_token),
         "spotifyUser": {
             "id": user.spotify_id,
@@ -407,7 +412,7 @@ def get_recommendations():
     if not language:
         return jsonify({
             "message": "Please select a language to continue.",
-            "available_languages": ["Hindi", "English", "Bengali", "Marathi", "Telugu", "Tamil"]
+            "available_languages": ["Hindi", "English", "Bengali", "Marathi", "Telugu", "Tamil", "Global"]
         }), 200
 
     # 🌿 Mental well-being mapping
@@ -420,7 +425,12 @@ def get_recommendations():
         "anxious": "soothing"
     }
     query_emotion = MENTAL_WELLBEING_MAP.get(emotion.lower(), emotion) if wellbeing_mode else emotion
-    query = f"{query_emotion} {language}"
+    
+    # For Global, search without language restriction
+    if language == "Global":
+        query = query_emotion
+    else:
+        query = f"{query_emotion} {language}"
 
     # ✅ Spotify path
     if user and user.spotify_access_token:
@@ -461,7 +471,12 @@ def get_recommendations():
             return jsonify(results), 200
 
     # 🧠 JioSaavn fallback
-    saavn_resp = requests.get(f"https://saavn.dev/api/search/songs?query={urllib.parse.quote(query)}&limit=10")
+    # For Global, use a broader search query
+    if language == "Global":
+        saavn_query = query_emotion  # Just the emotion, no language restriction
+    else:
+        saavn_query = query
+    saavn_resp = requests.get(f"https://saavn.dev/api/search/songs?query={urllib.parse.quote(saavn_query)}&limit=10")
     if saavn_resp.status_code != 200:
         return jsonify({"error": "Failed to fetch recommendations"}), 502
 
@@ -690,23 +705,79 @@ def get_featured_playlists():
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
     
+    # Get language preference from query param or user settings
+    language = request.args.get("language")
+    if not language and user:
+        language = user.language or "English"
+    
     playlists_data = []
     
-    # Define genres to fetch playlists for
-    genres = [
-        {"name": "Pop", "query": "pop hits"},
-        {"name": "Rock", "query": "rock classics"},
-        {"name": "Hip Hop", "query": "hip hop"},
-        {"name": "Electronic", "query": "electronic dance"},
-        {"name": "Jazz", "query": "jazz"},
-        {"name": "Classical", "query": "classical music"},
-        {"name": "Country", "query": "country music"},
-        {"name": "R&B", "query": "r&b soul"},
-        {"name": "Reggae", "query": "reggae"},
-        {"name": "Latin", "query": "latin music"},
-        {"name": "Bollywood", "query": "bollywood hits"},
-        {"name": "Indie", "query": "indie music"}
-    ]
+    # Filter genres based on language preference
+    if language == "Global":
+        # Global: Mix of popular genres from around the world
+        genres = [
+            {"name": "Global Pop", "query": "pop hits"},
+            {"name": "Global Rock", "query": "rock classics"},
+            {"name": "Hip Hop", "query": "hip hop"},
+            {"name": "Electronic", "query": "electronic dance"},
+            {"name": "Bollywood", "query": "bollywood hits"},
+            {"name": "K-Pop", "query": "k-pop"},
+            {"name": "Latin", "query": "latin music"},
+            {"name": "R&B", "query": "r&b soul"},
+            {"name": "Reggae", "query": "reggae"},
+            {"name": "Indie", "query": "indie music"},
+            {"name": "Jazz", "query": "jazz"},
+            {"name": "Classical", "query": "classical music"}
+        ]
+    elif language == "Hindi":
+        genres = [
+            {"name": "Bollywood", "query": "bollywood hits"},
+            {"name": "Hindi Pop", "query": "hindi pop"},
+            {"name": "Hindi Rock", "query": "hindi rock"},
+            {"name": "Devotional", "query": "hindi devotional"},
+            {"name": "Ghazal", "query": "hindi ghazal"},
+            {"name": "Classical", "query": "hindi classical"}
+        ]
+    elif language == "Bengali":
+        genres = [
+            {"name": "Bengali", "query": "bengali music"},
+            {"name": "Rabindra Sangeet", "query": "rabindra sangeet"},
+            {"name": "Modern Bengali", "query": "modern bengali"}
+        ]
+    elif language == "Marathi":
+        genres = [
+            {"name": "Marathi", "query": "marathi music"},
+            {"name": "Lavani", "query": "marathi lavani"},
+            {"name": "Bhakti", "query": "marathi bhakti"}
+        ]
+    elif language == "Telugu":
+        genres = [
+            {"name": "Telugu", "query": "telugu music"},
+            {"name": "Tollywood", "query": "tollywood hits"},
+            {"name": "Carnatic", "query": "telugu carnatic"}
+        ]
+    elif language == "Tamil":
+        genres = [
+            {"name": "Tamil", "query": "tamil music"},
+            {"name": "Kollywood", "query": "kollywood hits"},
+            {"name": "Carnatic", "query": "tamil carnatic"}
+        ]
+    else:
+        # Default genres for English
+        genres = [
+            {"name": "Pop", "query": "pop hits"},
+            {"name": "Rock", "query": "rock classics"},
+            {"name": "Hip Hop", "query": "hip hop"},
+            {"name": "Electronic", "query": "electronic dance"},
+            {"name": "Jazz", "query": "jazz"},
+            {"name": "Classical", "query": "classical music"},
+            {"name": "Country", "query": "country music"},
+            {"name": "R&B", "query": "r&b soul"},
+            {"name": "Reggae", "query": "reggae"},
+            {"name": "Latin", "query": "latin music"},
+            {"name": "Bollywood", "query": "bollywood hits"},
+            {"name": "Indie", "query": "indie music"}
+        ]
     
     # If user has Spotify, fetch genre-based playlists
     if user and user.spotify_access_token:
@@ -815,84 +886,260 @@ def get_trending_songs():
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
     
+    # Get language preference from query param or user settings
+    language = request.args.get("language")
+    if not language and user:
+        language = user.language or "English"
+    
     songs_data = []
     
     # Try Spotify first
     if user and user.spotify_access_token:
         try:
             ensure_valid_spotify_token(user)
-            # Get featured playlists or new releases
-            spotify_resp = requests.get(
-                "https://api.spotify.com/v1/browse/new-releases?limit=50",
-                headers={"Authorization": f"Bearer {user.spotify_access_token}"}
-            )
+            # Search for trending songs in the selected language
+            if language == "Global":
+                # For Global, get new releases (globally popular)
+                spotify_resp = requests.get(
+                    "https://api.spotify.com/v1/browse/new-releases?limit=50",
+                    headers={"Authorization": f"Bearer {user.spotify_access_token}"}
+                )
+            elif language and language != "English":
+                # Map language to search query
+                lang_queries = {
+                    "Hindi": "hindi bollywood",
+                    "Bengali": "bengali",
+                    "Marathi": "marathi",
+                    "Telugu": "telugu",
+                    "Tamil": "tamil"
+                }
+                search_query = lang_queries.get(language, language.lower())
+                spotify_resp = requests.get(
+                    f"https://api.spotify.com/v1/search?q={urllib.parse.quote(search_query)}&type=track&limit=50",
+                    headers={"Authorization": f"Bearer {user.spotify_access_token}"}
+                )
+            else:
+                # Get featured playlists or new releases for English/default
+                spotify_resp = requests.get(
+                    "https://api.spotify.com/v1/browse/new-releases?limit=50",
+                    headers={"Authorization": f"Bearer {user.spotify_access_token}"}
+                )
             if spotify_resp.status_code == 200:
-                albums = spotify_resp.json().get("albums", {}).get("items", [])
-                for album in albums:
-                    images = album.get("images", [])
-                    image_url = images[0].get("url") if images else "/images/song-1.png"
-                    artists = album.get("artists", [])
-                    artist_name = ", ".join([a.get("name") for a in artists]) if artists else "Unknown"
-                    album_id = album.get("id")
-                    
-                    # Use album URL directly (faster, and users can see all tracks in the album)
-                    spotify_uri = f"spotify:album:{album_id}"
-                    spotify_url = f"https://open.spotify.com/album/{album_id}"
-                    
-                    songs_data.append({
-                        "id": album_id,
-                        "title": album.get("name"),
-                        "subtitle": artist_name,
-                        "imageUrl": image_url,
-                        "album": album.get("name"),
-                        "artist": artist_name,
-                        "spotifyId": album_id,
-                        "spotifyUri": spotify_uri,
-                        "spotifyUrl": spotify_url
-                    })
+                if language == "Global" or (language and language != "English"):
+                    if language == "Global":
+                        # For Global, use new releases (already fetched above)
+                        albums = spotify_resp.json().get("albums", {}).get("items", [])
+                        for album in albums:
+                            images = album.get("images", [])
+                            image_url = images[0].get("url") if images else "/images/song-1.png"
+                            artists = album.get("artists", [])
+                            artist_name = ", ".join([a.get("name") for a in artists]) if artists else "Unknown"
+                            album_id = album.get("id")
+                            
+                            # Use album URL directly
+                            spotify_uri = f"spotify:album:{album_id}"
+                            spotify_url = f"https://open.spotify.com/album/{album_id}"
+                            
+                            songs_data.append({
+                                "id": album_id,
+                                "title": album.get("name"),
+                                "subtitle": artist_name,
+                                "imageUrl": image_url,
+                                "album": album.get("name"),
+                                "artist": artist_name,
+                                "spotifyId": album_id,
+                                "spotifyUri": spotify_uri,
+                                "spotifyUrl": spotify_url
+                            })
+                    else:
+                        # Handle track search results for specific languages
+                        tracks = spotify_resp.json().get("tracks", {}).get("items", [])
+                        seen_track_ids = set()
+                        for track in tracks:
+                            track_id = track.get("id")
+                            if track_id in seen_track_ids:
+                                continue
+                            seen_track_ids.add(track_id)
+                            
+                            album = track.get("album", {})
+                            images = album.get("images", [])
+                            image_url = images[1].get("url") if len(images) > 1 else (images[0].get("url") if images else "/images/song-1.png")
+                            artists = track.get("artists", [])
+                            artist_name = ", ".join([a.get("name") for a in artists]) if artists else "Unknown"
+                            
+                            songs_data.append({
+                                "id": track_id,
+                                "title": track.get("name"),
+                                "subtitle": artist_name,
+                                "imageUrl": image_url,
+                                "album": album.get("name"),
+                                "artist": artist_name,
+                                "spotifyId": track_id,
+                                "spotifyUri": track.get("uri"),
+                                "spotifyUrl": f"https://open.spotify.com/track/{track_id}"
+                            })
+                else:
+                    # Handle album results (new releases) for English
+                    albums = spotify_resp.json().get("albums", {}).get("items", [])
+                    for album in albums:
+                        images = album.get("images", [])
+                        image_url = images[0].get("url") if images else "/images/song-1.png"
+                        artists = album.get("artists", [])
+                        artist_name = ", ".join([a.get("name") for a in artists]) if artists else "Unknown"
+                        album_id = album.get("id")
+                        
+                        # Use album URL directly (faster, and users can see all tracks in the album)
+                        spotify_uri = f"spotify:album:{album_id}"
+                        spotify_url = f"https://open.spotify.com/album/{album_id}"
+                        
+                        songs_data.append({
+                            "id": album_id,
+                            "title": album.get("name"),
+                            "subtitle": artist_name,
+                            "imageUrl": image_url,
+                            "album": album.get("name"),
+                            "artist": artist_name,
+                            "spotifyId": album_id,
+                            "spotifyUri": spotify_uri,
+                            "spotifyUrl": spotify_url
+                        })
         except Exception as e:
             print(f"Error fetching Spotify trending: {e}")
+            import traceback
+            traceback.print_exc()
     
     # Fallback to JioSaavn or default
+    print(f"[Trending Songs] After Spotify, songs_data length: {len(songs_data)}, language: {language}")
     if not songs_data:
         try:
-            saavn_resp = requests.get("https://saavn.dev/api/search/songs?query=trending&limit=50", timeout=5)
-            if saavn_resp.status_code == 200:
-                saavn_data = saavn_resp.json().get("data", [])
-                for song in saavn_data:
-                    images = song.get("image", [])
-                    image_url = None
-                    if images:
-                        if isinstance(images, list) and len(images) > 0:
-                            image_url = images[-1].get("link") if isinstance(images[-1], dict) else images[-1]
-                        elif isinstance(images, dict):
-                            image_url = images.get("link")
-                    
-                    if not image_url:
-                        image_url = "/images/song-1.png"
-                    
-                    artist_names = ", ".join([a.get("name", "") for a in song.get("artists", [])]) if song.get("artists") else "Unknown Artist"
-                    
-                    songs_data.append({
-                        "id": song.get("id"),
-                        "title": song.get("name", "Unknown Song"),
-                        "subtitle": artist_names,
-                        "imageUrl": image_url,
-                        "url": song.get("url"),
-                        "artist": artist_names,
-                        "album": song.get("album", {}).get("name", "") if isinstance(song.get("album"), dict) else ""
-                    })
+            # Use language-specific query for JioSaavn
+            if language == "Global":
+                # Global: Try multiple popular queries to get diverse results
+                global_queries = ["popular", "trending", "hits", "top songs"]
+                for query in global_queries:
+                    try:
+                        saavn_resp = requests.get(f"https://saavn.dev/api/search/songs?query={urllib.parse.quote(query)}&limit=50", timeout=5)
+                        if saavn_resp.status_code == 200:
+                            saavn_data = saavn_resp.json().get("data", [])
+                            if saavn_data:
+                                for song in saavn_data:
+                                    images = song.get("image", [])
+                                    image_url = None
+                                    if images:
+                                        if isinstance(images, list) and len(images) > 0:
+                                            image_url = images[-1].get("link") if isinstance(images[-1], dict) else images[-1]
+                                        elif isinstance(images, dict):
+                                            image_url = images.get("link")
+                                    
+                                    if not image_url:
+                                        image_url = "/images/song-1.png"
+                                    
+                                    artist_names = ", ".join([a.get("name", "") for a in song.get("artists", [])]) if song.get("artists") else "Unknown Artist"
+                                    
+                                    songs_data.append({
+                                        "id": song.get("id"),
+                                        "title": song.get("name", "Unknown Song"),
+                                        "subtitle": artist_names,
+                                        "imageUrl": image_url,
+                                        "url": song.get("url"),
+                                        "artist": artist_names,
+                                        "album": song.get("album", {}).get("name", "") if isinstance(song.get("album"), dict) else ""
+                                    })
+                                if len(songs_data) >= 20:  # Stop once we have enough songs
+                                    break
+                    except Exception as e:
+                        print(f"Error fetching JioSaavn with query '{query}': {e}")
+                        continue
+            elif language and language != "English":
+                lang_queries = {
+                    "Hindi": "hindi",
+                    "Bengali": "bengali",
+                    "Marathi": "marathi",
+                    "Telugu": "telugu",
+                    "Tamil": "tamil"
+                }
+                search_query = lang_queries.get(language, language.lower())
+                saavn_resp = requests.get(f"https://saavn.dev/api/search/songs?query={urllib.parse.quote(search_query)}&limit=50", timeout=5)
+                if saavn_resp.status_code == 200:
+                    saavn_data = saavn_resp.json().get("data", [])
+                    for song in saavn_data:
+                        images = song.get("image", [])
+                        image_url = None
+                        if images:
+                            if isinstance(images, list) and len(images) > 0:
+                                image_url = images[-1].get("link") if isinstance(images[-1], dict) else images[-1]
+                            elif isinstance(images, dict):
+                                image_url = images.get("link")
+                        
+                        if not image_url:
+                            image_url = "/images/song-1.png"
+                        
+                        artist_names = ", ".join([a.get("name", "") for a in song.get("artists", [])]) if song.get("artists") else "Unknown Artist"
+                        
+                        songs_data.append({
+                            "id": song.get("id"),
+                            "title": song.get("name", "Unknown Song"),
+                            "subtitle": artist_names,
+                            "imageUrl": image_url,
+                            "url": song.get("url"),
+                            "artist": artist_names,
+                            "album": song.get("album", {}).get("name", "") if isinstance(song.get("album"), dict) else ""
+                        })
+            else:
+                saavn_resp = requests.get("https://saavn.dev/api/search/songs?query=trending&limit=50", timeout=5)
+                if saavn_resp.status_code == 200:
+                    saavn_data = saavn_resp.json().get("data", [])
+                    for song in saavn_data:
+                        images = song.get("image", [])
+                        image_url = None
+                        if images:
+                            if isinstance(images, list) and len(images) > 0:
+                                image_url = images[-1].get("link") if isinstance(images[-1], dict) else images[-1]
+                            elif isinstance(images, dict):
+                                image_url = images.get("link")
+                        
+                        if not image_url:
+                            image_url = "/images/song-1.png"
+                        
+                        artist_names = ", ".join([a.get("name", "") for a in song.get("artists", [])]) if song.get("artists") else "Unknown Artist"
+                        
+                        songs_data.append({
+                            "id": song.get("id"),
+                            "title": song.get("name", "Unknown Song"),
+                            "subtitle": artist_names,
+                            "imageUrl": image_url,
+                            "url": song.get("url"),
+                            "artist": artist_names,
+                            "album": song.get("album", {}).get("name", "") if isinstance(song.get("album"), dict) else ""
+                        })
         except Exception as e:
             print(f"Error fetching JioSaavn trending: {e}")
+            import traceback
+            traceback.print_exc()
     
-    # Default fallback
+    # Default fallback - only use if no data was fetched from APIs
+    print(f"[Trending Songs] After JioSaavn, songs_data length: {len(songs_data)}, language: {language}")
     if not songs_data:
-        songs_data = [
-            {"id": 1, "title": "Blue Eyes", "subtitle": "Honey Singh", "imageUrl": "/images/song-1.png"},
-            {"id": 2, "title": "Photograph", "subtitle": "Ed Sheeran", "imageUrl": "/images/song-2.png"},
-            {"id": 3, "title": "Dil Jhoom", "subtitle": "Arijjit Singh", "imageUrl": "/images/song-3.png"},
-            {"id": 4, "title": "APT", "subtitle": "Rose & Bruno Mars", "imageUrl": "/images/song-4.png"}
-        ]
+        print(f"[Trending Songs] No data fetched for language: {language}, using default fallback")
+        # For Global, provide more diverse default songs
+        if language == "Global":
+            songs_data = [
+                {"id": 1, "title": "Shape of You", "subtitle": "Ed Sheeran", "imageUrl": "/images/song-1.png"},
+                {"id": 2, "title": "Blinding Lights", "subtitle": "The Weeknd", "imageUrl": "/images/song-2.png"},
+                {"id": 3, "title": "Dynamite", "subtitle": "BTS", "imageUrl": "/images/song-3.png"},
+                {"id": 4, "title": "Watermelon Sugar", "subtitle": "Harry Styles", "imageUrl": "/images/song-4.png"},
+                {"id": 5, "title": "Levitating", "subtitle": "Dua Lipa", "imageUrl": "/images/song-1.png"},
+                {"id": 6, "title": "Stay", "subtitle": "The Kid LAROI & Justin Bieber", "imageUrl": "/images/song-2.png"},
+                {"id": 7, "title": "Good 4 U", "subtitle": "Olivia Rodrigo", "imageUrl": "/images/song-3.png"},
+                {"id": 8, "title": "Peaches", "subtitle": "Justin Bieber", "imageUrl": "/images/song-4.png"}
+            ]
+        else:
+            songs_data = [
+                {"id": 1, "title": "Blue Eyes", "subtitle": "Honey Singh", "imageUrl": "/images/song-1.png"},
+                {"id": 2, "title": "Photograph", "subtitle": "Ed Sheeran", "imageUrl": "/images/song-2.png"},
+                {"id": 3, "title": "Dil Jhoom", "subtitle": "Arijjit Singh", "imageUrl": "/images/song-3.png"},
+                {"id": 4, "title": "APT", "subtitle": "Rose & Bruno Mars", "imageUrl": "/images/song-4.png"}
+            ]
     
     return jsonify(songs_data), 200
 
@@ -904,6 +1151,14 @@ def get_artists():
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
     
+    # Get language preference from query param or user settings
+    language = request.args.get("language")
+    if not language and user:
+        language = user.language or "English"
+    
+    # Log for debugging
+    print(f"[Artists API] Language received: {language}, Query param: {request.args.get('language')}, User language: {user.language if user else 'N/A'}")
+    
     artists_data = []
     seen_artist_ids = set()  # Track unique artist IDs
     seen_artist_names = set()  # Track unique artist names (case-insensitive)
@@ -912,15 +1167,51 @@ def get_artists():
     if user and user.spotify_access_token:
         try:
             ensure_valid_spotify_token(user)
-            # Search for popular artists
-            popular_artists = [
-                "Arijit Singh", "Sonu Nigam", "Shreya Ghoshal", "Atif Aslam", 
-                "Ed Sheeran", "Taylor Swift", "The Weeknd", "Drake", "Adele",
-                "Billie Eilish", "Post Malone", "Dua Lipa", "Justin Bieber",
-                "Ariana Grande", "Bruno Mars", "Coldplay", "Imagine Dragons",
-                "Eminem", "Kanye West", "Kendrick Lamar", "Lana Del Rey",
-                "Rihanna", "Beyoncé", "The Beatles", "Queen"
-            ]
+            # Search for popular artists based on language
+            if language == "Global":
+                # Global: Mix of popular artists from different languages and regions
+                popular_artists = [
+                    "Ed Sheeran", "Taylor Swift", "The Weeknd", "Drake", "Adele",
+                    "Billie Eilish", "Post Malone", "Dua Lipa", "Justin Bieber",
+                    "Ariana Grande", "Bruno Mars", "Coldplay", "Imagine Dragons",
+                    "Arijit Singh", "Shreya Ghoshal", "A.R. Rahman", "The Weeknd",
+                    "BTS", "Bad Bunny", "J Balvin", "Shakira", "Eminem",
+                    "Kanye West", "Kendrick Lamar", "Lana Del Rey", "Rihanna",
+                    "Beyoncé", "The Beatles", "Queen", "Drake"
+                ]
+            elif language == "Hindi":
+                popular_artists = [
+                    "Arijit Singh", "Sonu Nigam", "Shreya Ghoshal", "Atif Aslam",
+                    "Kumar Sanu", "Udit Narayan", "Alka Yagnik", "Kishore Kumar",
+                    "Lata Mangeshkar", "Mohammed Rafi", "A.R. Rahman", "Vishal-Shekhar"
+                ]
+            elif language == "Bengali":
+                popular_artists = [
+                    "Anupam Roy", "Rupam Islam", "Nachiketa", "Srikanto Acharya",
+                    "Lopamudra Mitra", "Shreya Ghoshal", "Arijit Singh"
+                ]
+            elif language == "Marathi":
+                popular_artists = [
+                    "Ajay-Atul", "Shankar Mahadevan", "Sonu Nigam", "Shreya Ghoshal"
+                ]
+            elif language == "Telugu":
+                popular_artists = [
+                    "S.P. Balasubrahmanyam", "K.S. Chithra", "Sid Sriram", "Anirudh Ravichander"
+                ]
+            elif language == "Tamil":
+                popular_artists = [
+                    "A.R. Rahman", "Ilaiyaraaja", "Anirudh Ravichander", "Yuvan Shankar Raja",
+                    "Sid Sriram", "Shreya Ghoshal"
+                ]
+            else:
+                # Default English/International artists
+                popular_artists = [
+                    "Ed Sheeran", "Taylor Swift", "The Weeknd", "Drake", "Adele",
+                    "Billie Eilish", "Post Malone", "Dua Lipa", "Justin Bieber",
+                    "Ariana Grande", "Bruno Mars", "Coldplay", "Imagine Dragons",
+                    "Eminem", "Kanye West", "Kendrick Lamar", "Lana Del Rey",
+                    "Rihanna", "Beyoncé", "The Beatles", "Queen"
+                ]
             for artist_name in popular_artists:
                 try:
                     spotify_resp = requests.get(
@@ -956,14 +1247,132 @@ def get_artists():
         except Exception as e:
             print(f"Error fetching Spotify artists: {e}")
     
-    # Default fallback
+    # Fallback to JioSaavn - extract artists from popular songs
+    if not artists_data or len(artists_data) < 10:
+        try:
+            # Use language-specific search for JioSaavn songs, then extract artists
+            if language and language != "English":
+                lang_queries = {
+                    "Hindi": "hindi",
+                    "Bengali": "bengali",
+                    "Marathi": "marathi",
+                    "Telugu": "telugu",
+                    "Tamil": "tamil"
+                }
+                search_query = lang_queries.get(language, language.lower())
+                saavn_resp = requests.get(f"https://saavn.dev/api/search/songs?query={urllib.parse.quote(search_query)}&limit=50", timeout=5)
+            else:
+                saavn_resp = requests.get("https://saavn.dev/api/search/songs?query=popular&limit=50", timeout=5)
+            
+            if saavn_resp.status_code == 200:
+                saavn_data = saavn_resp.json().get("data", [])
+                # Extract unique artists from songs
+                for song in saavn_data:
+                    song_artists = song.get("artists", [])
+                    if song_artists:
+                        for artist_info in song_artists:
+                            if isinstance(artist_info, dict):
+                                artist_id = artist_info.get("id")
+                                artist_name = artist_info.get("name", "")
+                            else:
+                                # If artist_info is a string
+                                artist_name = str(artist_info)
+                                artist_id = f"saavn_{artist_name.lower().replace(' ', '_')}"
+                            
+                            if not artist_name:
+                                continue
+                            
+                            artist_name_lower = artist_name.lower().strip()
+                            
+                            # Skip if we've already seen this artist
+                            if artist_id in seen_artist_ids or artist_name_lower in seen_artist_names:
+                                continue
+                            
+                            seen_artist_ids.add(artist_id)
+                            seen_artist_names.add(artist_name_lower)
+                            
+                            # Get image from song or use placeholder
+                            images = song.get("image", [])
+                            image_url = None
+                            if images:
+                                if isinstance(images, list) and len(images) > 0:
+                                    image_url = images[-1].get("link") if isinstance(images[-1], dict) else images[-1]
+                                elif isinstance(images, dict):
+                                    image_url = images.get("link")
+                            
+                            if not image_url:
+                                image_url = f"/images/artist-{artist_name.lower().replace(' ', '-')}-circle.png"
+                            
+                            artists_data.append({
+                                "id": artist_id,
+                                "title": artist_name,
+                                "subtitle": "Artist",
+                                "imageUrl": image_url
+                            })
+                            
+                            # Limit to 20 artists from JioSaavn
+                            if len(artists_data) >= 20:
+                                break
+                        if len(artists_data) >= 20:
+                            break
+        except Exception as e:
+            print(f"Error fetching JioSaavn artists: {e}")
+    
+    # Default fallback based on language
     if not artists_data:
-        artists_data = [
-            {"id": 1, "title": "Arijit Singh", "subtitle": "Bollywood Singer", "imageUrl": "/images/artist-arijit-circle.png"},
-            {"id": 2, "title": "Sonu Nigam", "subtitle": "Bollywood Singer", "imageUrl": "/images/artist-sonu-circle.png"},
-            {"id": 3, "title": "Shreya Ghoshal", "subtitle": "Bollywood Singer", "imageUrl": "/images/artist-shreya-circle.png"},
-            {"id": 4, "title": "Atif Aslam", "subtitle": "Bollywood Singer", "imageUrl": "/images/artist-atif-circle.png"}
-        ]
+        if language == "Global":
+            # Global: Mix of popular artists from different regions
+            artists_data = [
+                {"id": 1, "title": "Ed Sheeran", "subtitle": "Global Artist", "imageUrl": "/images/artist-1.png"},
+                {"id": 2, "title": "Taylor Swift", "subtitle": "Global Artist", "imageUrl": "/images/artist-2.png"},
+                {"id": 3, "title": "Arijit Singh", "subtitle": "Global Artist", "imageUrl": "/images/artist-3.png"},
+                {"id": 4, "title": "BTS", "subtitle": "Global Artist", "imageUrl": "/images/artist-4.png"},
+                {"id": 5, "title": "Bad Bunny", "subtitle": "Global Artist", "imageUrl": "/images/artist-1.png"},
+                {"id": 6, "title": "Shakira", "subtitle": "Global Artist", "imageUrl": "/images/artist-2.png"}
+            ]
+        elif language == "Hindi":
+            artists_data = [
+                {"id": 1, "title": "Arijit Singh", "subtitle": "Bollywood Singer", "imageUrl": "/images/artist-arijit-circle.png"},
+                {"id": 2, "title": "Sonu Nigam", "subtitle": "Bollywood Singer", "imageUrl": "/images/artist-sonu-circle.png"},
+                {"id": 3, "title": "Shreya Ghoshal", "subtitle": "Bollywood Singer", "imageUrl": "/images/artist-shreya-circle.png"},
+                {"id": 4, "title": "Atif Aslam", "subtitle": "Bollywood Singer", "imageUrl": "/images/artist-atif-circle.png"}
+            ]
+        elif language == "Bengali":
+            artists_data = [
+                {"id": 1, "title": "Anupam Roy", "subtitle": "Bengali Singer", "imageUrl": "/images/artist-1.png"},
+                {"id": 2, "title": "Rupam Islam", "subtitle": "Bengali Singer", "imageUrl": "/images/artist-2.png"},
+                {"id": 3, "title": "Nachiketa", "subtitle": "Bengali Singer", "imageUrl": "/images/artist-3.png"},
+                {"id": 4, "title": "Srikanto Acharya", "subtitle": "Bengali Singer", "imageUrl": "/images/artist-4.png"}
+            ]
+        elif language == "Marathi":
+            artists_data = [
+                {"id": 1, "title": "Ajay-Atul", "subtitle": "Marathi Composers", "imageUrl": "/images/artist-1.png"},
+                {"id": 2, "title": "Shankar Mahadevan", "subtitle": "Marathi Singer", "imageUrl": "/images/artist-2.png"},
+                {"id": 3, "title": "Sonu Nigam", "subtitle": "Marathi Singer", "imageUrl": "/images/artist-3.png"},
+                {"id": 4, "title": "Shreya Ghoshal", "subtitle": "Marathi Singer", "imageUrl": "/images/artist-4.png"}
+            ]
+        elif language == "Telugu":
+            artists_data = [
+                {"id": 1, "title": "S.P. Balasubrahmanyam", "subtitle": "Telugu Singer", "imageUrl": "/images/artist-1.png"},
+                {"id": 2, "title": "K.S. Chithra", "subtitle": "Telugu Singer", "imageUrl": "/images/artist-2.png"},
+                {"id": 3, "title": "Sid Sriram", "subtitle": "Telugu Singer", "imageUrl": "/images/artist-3.png"},
+                {"id": 4, "title": "Anirudh Ravichander", "subtitle": "Telugu Composer", "imageUrl": "/images/artist-4.png"}
+            ]
+        elif language == "Tamil":
+            artists_data = [
+                {"id": 1, "title": "A.R. Rahman", "subtitle": "Tamil Composer", "imageUrl": "/images/artist-1.png"},
+                {"id": 2, "title": "Ilaiyaraaja", "subtitle": "Tamil Composer", "imageUrl": "/images/artist-2.png"},
+                {"id": 3, "title": "Anirudh Ravichander", "subtitle": "Tamil Composer", "imageUrl": "/images/artist-3.png"},
+                {"id": 4, "title": "Yuvan Shankar Raja", "subtitle": "Tamil Composer", "imageUrl": "/images/artist-4.png"}
+            ]
+        else:
+            # Default English/International artists
+            artists_data = [
+                {"id": 1, "title": "Ed Sheeran", "subtitle": "English Singer", "imageUrl": "/images/artist-1.png"},
+                {"id": 2, "title": "Taylor Swift", "subtitle": "English Singer", "imageUrl": "/images/artist-2.png"},
+                {"id": 3, "title": "The Weeknd", "subtitle": "English Singer", "imageUrl": "/images/artist-3.png"},
+                {"id": 4, "title": "Drake", "subtitle": "English Rapper", "imageUrl": "/images/artist-4.png"}
+            ]
     
     return jsonify(artists_data), 200
 
@@ -1021,6 +1430,263 @@ def process_voice_command():
     db.session.add(VoiceCommandLog(user_id=user_id, command=command))
     db.session.commit()
     return jsonify({"message": "Voice command processed", "actionExecuted": action}), 200
+
+
+# ======================================================
+# 6️⃣  User Settings & Preferences
+# ======================================================
+
+@app.route('/api/settings/preferences', methods=['GET'])
+@jwt_required()
+def get_preferences():
+    """Get user preferences"""
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
+    return jsonify({
+        "theme": user.theme or "light",
+        "language": user.language or "English",
+        "camera_access_enabled": user.camera_access_enabled if user.camera_access_enabled is not None else True,
+        "notifications_enabled": user.notifications_enabled if user.notifications_enabled is not None else True,
+        "add_to_home_enabled": user.add_to_home_enabled if user.add_to_home_enabled is not None else False
+    }), 200
+
+
+@app.route('/api/settings/preferences', methods=['PUT'])
+@jwt_required()
+def update_preferences():
+    """Update user preferences"""
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
+    data = request.get_json()
+    
+    if 'theme' in data:
+        if data['theme'] in ['light', 'dark']:
+            user.theme = data['theme']
+        else:
+            return jsonify({"error": "Invalid theme. Must be 'light' or 'dark'"}), 400
+    
+    if 'language' in data:
+        user.language = data['language']
+    
+    if 'camera_access_enabled' in data:
+        user.camera_access_enabled = bool(data['camera_access_enabled'])
+    
+    if 'notifications_enabled' in data:
+        user.notifications_enabled = bool(data['notifications_enabled'])
+    
+    if 'add_to_home_enabled' in data:
+        user.add_to_home_enabled = bool(data['add_to_home_enabled'])
+    
+    try:
+        db.session.commit()
+        return jsonify({"message": "Preferences updated successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Failed to update preferences", "details": str(e)}), 500
+
+
+@app.route('/api/settings/password', methods=['PUT'])
+@jwt_required()
+def change_password():
+    """Change user password"""
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
+    data = request.get_json()
+    current_password = data.get("current_password")
+    new_password = data.get("new_password")
+    
+    if not current_password or not new_password:
+        return jsonify({"error": "Current password and new password required"}), 400
+    
+    if len(new_password) < 6:
+        return jsonify({"error": "New password must be at least 6 characters"}), 400
+    
+    # Verify current password
+    if not check_password_hash(user.password, current_password):
+        return jsonify({"error": "Current password is incorrect"}), 401
+    
+    # Update password
+    user.password = generate_password_hash(new_password)
+    
+    try:
+        db.session.commit()
+        return jsonify({"message": "Password changed successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Failed to change password", "details": str(e)}), 500
+
+
+@app.route('/api/settings/history/clear', methods=['DELETE'])
+@jwt_required()
+def clear_listening_history():
+    """Clear user's listening history"""
+    user_id = get_jwt_identity()
+    
+    try:
+        # Delete all song history for the user
+        SongHistory.query.filter_by(user_id=user_id).delete()
+        db.session.commit()
+        return jsonify({"message": "Listening history cleared successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Failed to clear history", "details": str(e)}), 500
+
+
+@app.route('/api/settings/account/delete', methods=['DELETE'])
+@jwt_required()
+def delete_account():
+    """Delete user account and all associated data"""
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
+    try:
+        # Delete all associated data
+        EmotionLog.query.filter_by(user_id=user_id).delete()
+        VoiceCommandLog.query.filter_by(user_id=user_id).delete()
+        GestureLog.query.filter_by(user_id=user_id).delete()
+        LikedSong.query.filter_by(user_id=user_id).delete()
+        SongHistory.query.filter_by(user_id=user_id).delete()
+        
+        # Delete user playlists and their songs
+        playlists = Playlist.query.filter_by(user_id=user_id).all()
+        for playlist in playlists:
+            PlaylistSong.query.filter_by(playlist_id=playlist.id).delete()
+        Playlist.query.filter_by(user_id=user_id).delete()
+        
+        # Finally, delete the user
+        db.session.delete(user)
+        db.session.commit()
+        
+        return jsonify({"message": "Account deleted successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Failed to delete account", "details": str(e)}), 500
+
+
+@app.route('/api/settings/spotify/unlink', methods=['DELETE'])
+@jwt_required()
+def unlink_spotify():
+    """Unlink Spotify account from user"""
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
+    try:
+        # Clear Spotify-related fields
+        user.spotify_id = None
+        user.spotify_display_name = None
+        user.spotify_email = None
+        user.spotify_access_token = None
+        user.spotify_refresh_token = None
+        
+        db.session.commit()
+        return jsonify({"message": "Spotify account unlinked successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Failed to unlink Spotify account", "details": str(e)}), 500
+
+
+@app.route('/api/profile', methods=['GET'])
+@jwt_required()
+def get_profile():
+    """Get user profile information"""
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
+    return jsonify({
+        "id": user.id,
+        "email": user.email,
+        "first_name": user.first_name,
+        "username": user.username,
+        "phone_number": user.phone_number,
+        "bio": user.bio,
+        "profile_picture_url": user.profile_picture_url,
+        "spotifyLinked": bool(user.spotify_access_token),
+        "spotifyUser": {
+            "id": user.spotify_id,
+            "name": user.spotify_display_name,
+            "email": user.spotify_email
+        } if user.spotify_access_token else None
+    }), 200
+
+
+@app.route('/api/profile', methods=['PUT'])
+@jwt_required()
+def update_profile():
+    """Update user profile information"""
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
+    data = request.get_json()
+    
+    if 'first_name' in data:
+        user.first_name = data['first_name']
+    
+    if 'username' in data:
+        # Check if username is already taken by another user
+        existing_user = User.query.filter_by(username=data['username']).first()
+        if existing_user and existing_user.id != user_id:
+            return jsonify({"error": "Username already taken"}), 409
+        user.username = data['username']
+    
+    if 'phone_number' in data:
+        user.phone_number = data['phone_number']
+    
+    if 'bio' in data:
+        user.bio = data['bio']
+    
+    try:
+        db.session.commit()
+        return jsonify({"message": "Profile updated successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Failed to update profile", "details": str(e)}), 500
+
+
+@app.route('/api/profile/picture', methods=['POST'])
+@jwt_required()
+def upload_profile_picture():
+    """Upload profile picture (base64 encoded)"""
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
+    data = request.get_json()
+    image_data = data.get("image")
+    
+    if not image_data:
+        return jsonify({"error": "Image data required"}), 400
+    
+    # Store the base64 image data URL directly
+    # In production, you might want to upload to S3 or similar and store the URL
+    user.profile_picture_url = image_data
+    
+    try:
+        db.session.commit()
+        return jsonify({
+            "message": "Profile picture uploaded successfully",
+            "profile_picture_url": user.profile_picture_url
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Failed to upload profile picture", "details": str(e)}), 500
 
 
 # ======================================================

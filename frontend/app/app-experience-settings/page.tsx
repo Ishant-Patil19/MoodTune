@@ -2,12 +2,144 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
+import { useRouter } from 'next/navigation'
+import { authAPI, settingsAPI } from '@/lib/api'
 import styles from './page.module.css'
 
 export default function AppExperienceSettings() {
+  const { user, isAuthenticated, loading: authLoading } = useAuth()
+  const router = useRouter()
   const [addToHome, setAddToHome] = useState(false)
   const [notification, setNotification] = useState(false)
+  const [profile, setProfile] = useState<any>(null)
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push('/login')
+    }
+  }, [isAuthenticated, authLoading, router])
+
+  useEffect(() => {
+    if (user) {
+      fetchPreferences()
+      fetchProfile()
+    }
+  }, [user])
+
+  // Refetch profile when page becomes visible (e.g., when returning from edit profile)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user) {
+        fetchProfile()
+      }
+    }
+
+    const handleFocus = () => {
+      if (user) {
+        fetchProfile()
+      }
+    }
+
+    window.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleFocus)
+
+    return () => {
+      window.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [user])
+
+  const fetchPreferences = async () => {
+    try {
+      const prefs = await settingsAPI.getPreferences()
+      setAddToHome(prefs.add_to_home_enabled || false)
+      setNotification(prefs.notifications_enabled !== false)
+    } catch (error) {
+      console.error('Failed to fetch preferences:', error)
+    }
+  }
+
+  const fetchProfile = async () => {
+    try {
+      const profileData = await authAPI.getProfile()
+      setProfile(profileData)
+    } catch (error) {
+      console.error('Failed to fetch profile:', error)
+    }
+  }
+
+  const handleAddToHomeChange = async (enabled: boolean) => {
+    setAddToHome(enabled)
+    try {
+      await settingsAPI.updatePreferences({ add_to_home_enabled: enabled })
+      if (enabled) {
+        // Show instructions for adding to home screen
+        alert('To add MoodTune to your home screen:\n\nOn iOS: Tap the Share button and select "Add to Home Screen"\nOn Android: Tap the menu and select "Add to Home Screen"')
+      }
+    } catch (error: any) {
+      console.error('Failed to update add to home:', error)
+      alert(error.message || 'Failed to update setting')
+      // Revert on error
+      const prefs = await settingsAPI.getPreferences()
+      setAddToHome(prefs.add_to_home_enabled || false)
+    }
+  }
+
+  const handleNotificationChange = async (enabled: boolean) => {
+    setNotification(enabled)
+    try {
+      await settingsAPI.updatePreferences({ notifications_enabled: enabled })
+      if (enabled) {
+        // Request notification permission
+        if ('Notification' in window && Notification.permission === 'default') {
+          await Notification.requestPermission()
+        }
+      }
+    } catch (error: any) {
+      console.error('Failed to update notifications:', error)
+      alert(error.message || 'Failed to update setting')
+      // Revert on error
+      const prefs = await settingsAPI.getPreferences()
+      setNotification(prefs.notifications_enabled !== false)
+    }
+  }
+
+  const handleFeedbackClick = () => {
+    window.location.href = 'mailto:support@moodtune.com?subject=Feedback'
+  }
+
+  const handleSupportClick = () => {
+    window.location.href = 'mailto:support@moodtune.com?subject=Support Request'
+  }
+
+  const getDisplayName = () => {
+    if (profile?.first_name) return profile.first_name
+    if (profile?.username) return profile.username
+    if (user?.email) return user.email.split('@')[0]
+    return 'User'
+  }
+
+  const getUsername = () => {
+    if (profile?.username) return `@${profile.username}`
+    if (user?.email) return `@${user.email.split('@')[0]}`
+    return '@user'
+  }
+
+  const getProfilePicture = () => {
+    if (profile?.profile_picture_url) return profile.profile_picture_url
+    return '/images/profile-emily.png'
+  }
+
+  const getBio = () => {
+    if (profile?.bio) return profile.bio
+    return 'No bio yet. Click Edit to add one!'
+  }
+
+  if (authLoading) {
+    return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>
+  }
 
   return (
     <div className={styles.container}>
@@ -24,6 +156,12 @@ export default function AppExperienceSettings() {
               unoptimized
               priority
             />
+          </Link>
+          
+          {/* Back to Home Button */}
+          <Link href="/home" className={styles.backButton}>
+            <span style={{ marginRight: '8px', fontSize: '18px' }}>←</span>
+            Back to Home
           </Link>
           
           <div className={styles.searchContainer}>
@@ -62,10 +200,11 @@ export default function AppExperienceSettings() {
           
           <Link href="/edit-profile" className={styles.profileIcon}>
             <Image
-              src="/images/profile-icon.svg"
+              src={getProfilePicture()}
               alt="Profile"
               width={53}
               height={53}
+              className={styles.profileIconImage}
               unoptimized
             />
           </Link>
@@ -80,8 +219,8 @@ export default function AppExperienceSettings() {
           <div className={styles.profileSection}>
             <div className={styles.profileImageContainer}>
               <Image
-                src="/images/profile-emily.png"
-                alt="Emily Carter"
+                src={getProfilePicture()}
+                alt={getDisplayName()}
                 width={331}
                 height={332}
                 className={styles.profileImage}
@@ -90,10 +229,10 @@ export default function AppExperienceSettings() {
             </div>
             
             <div className={styles.profileInfo}>
-              <h2 className={styles.profileName}>Emily Carter</h2>
-              <p className={styles.profileUsername}>@emilytheone</p>
+              <h2 className={styles.profileName}>{getDisplayName()}</h2>
+              <p className={styles.profileUsername}>{getUsername()}</p>
               <p className={styles.profileBio}>
-                Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.
+                {getBio()}
               </p>
             </div>
             
@@ -131,7 +270,7 @@ export default function AppExperienceSettings() {
                 <input
                   type="checkbox"
                   checked={addToHome}
-                  onChange={(e) => setAddToHome(e.target.checked)}
+                  onChange={(e) => handleAddToHomeChange(e.target.checked)}
                 />
                 <span className={styles.toggleSlider}></span>
               </label>
@@ -146,7 +285,7 @@ export default function AppExperienceSettings() {
                 <input
                   type="checkbox"
                   checked={notification}
-                  onChange={(e) => setNotification(e.target.checked)}
+                  onChange={(e) => handleNotificationChange(e.target.checked)}
                 />
                 <span className={styles.toggleSlider}></span>
               </label>
@@ -154,10 +293,22 @@ export default function AppExperienceSettings() {
           </div>
 
           {/* Feedback and Support Card */}
-          <div className={styles.settingCard}>
+          <div className={styles.settingCard} style={{ cursor: 'pointer' }}>
             <div className={styles.settingItem}>
-              <span className={styles.settingLabel}>Feedback</span>
-              <span className={styles.settingLabelRight}>Support</span>
+              <span 
+                className={styles.settingLabel}
+                onClick={handleFeedbackClick}
+                style={{ cursor: 'pointer' }}
+              >
+                Feedback
+              </span>
+              <span 
+                className={styles.settingLabelRight}
+                onClick={handleSupportClick}
+                style={{ cursor: 'pointer' }}
+              >
+                Support
+              </span>
             </div>
           </div>
         </div>
