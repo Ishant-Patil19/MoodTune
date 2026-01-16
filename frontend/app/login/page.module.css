@@ -27,8 +27,10 @@
 /* Figma positions are relative to frame (1504x1313), container is at (49, 51) */
 .leftContent {
   position: absolute;
-  left: 54px; /* 103 - 49 (button x - container x) */
-  top: 252px; /* 303 - 51 (frame y - container y) */
+  left: 54px;
+  /* 103 - 49 (button x - container x) */
+  top: 252px;
+  /* 303 - 51 (frame y - container y) */
   width: 476px;
   display: flex;
   flex-direction: column;
@@ -46,8 +48,10 @@
   width: 331px;
   height: 116px;
   margin: 0;
-  margin-left: 45px; /* 148 - 103 (title x - button x) */
-  margin-bottom: 95px; /* 514 - 303 - 116 = 95 */
+  margin-left: 45px;
+  /* 148 - 103 (title x - button x) */
+  margin-bottom: 95px;
+  /* 514 - 303 - 116 = 95 */
 }
 
 .continueSection {
@@ -71,14 +75,16 @@
   height: 29px;
   margin: 0;
   position: absolute;
-  left: 62px; /* 116 - 54 (text x - leftContent x) */
+  left: 62px;
+  /* 116 - 54 (text x - leftContent x) */
   top: 0;
   white-space: nowrap;
 }
 
 .arrowIcon {
   position: absolute;
-  left: 225px; /* 279 - 54 (arrow x - leftContent x) */
+  left: 225px;
+  /* 279 - 54 (arrow x - leftContent x) */
   top: 0;
   width: 35.1px;
   height: 35.1px;
@@ -108,7 +114,8 @@
   cursor: pointer;
   padding: 0;
   margin: 0;
-  margin-top: 15px; /* Gap between continueSection and button */
+  margin-top: 15px;
+  /* Gap between continueSection and button */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -125,8 +132,10 @@
 /* Image is at frame x:632, container is at frame x:49, so relative to container: 632-49=583 */
 .rightImage {
   position: absolute;
-  left: 583px; /* 632 - 49 (frame x - container x) */
-  top: 29px; /* 80 - 51 (frame y - container y) */
+  left: 583px;
+  /* 632 - 49 (frame x - container x) */
+  top: 29px;
+  /* 80 - 51 (frame y - container y) */
   width: 796px;
   height: 1157px;
   border-radius: 86px;
@@ -143,8 +152,8 @@
 /* Close button in top right of image with white shadow */
 .closeButton {
   position: absolute;
-  top: 30px;
-  right: 30px;
+  top: 40px;
+  right: 40px;
   width: 40px;
   height: 40px;
   display: flex;
@@ -220,4 +229,3 @@
     left: auto;
   }
 }
-

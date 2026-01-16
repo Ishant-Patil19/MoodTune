@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkAuth = async () => {
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+      const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null
       if (!token) {
         setLoading(false)
         return
@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Auth check failed:', error)
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('auth_token')
+        localStorage.removeItem('access_token')
       }
       setUser(null)
     } finally {

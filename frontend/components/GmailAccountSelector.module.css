@@ -1,0 +1,252 @@
+/* Overlay backdrop */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Popup container */
+.popup {
+    width: 520px;
+    max-width: 90vw;
+    max-height: 90vh;
+    background: linear-gradient(180deg, #2D444E 0%, #689DB4 100%);
+    border-radius: 40px;
+    padding: 50px 70px;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    animation: slideUp 0.3s ease;
+    overflow-y: auto;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Header section */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.title {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 36px;
+    line-height: 1.2;
+    color: #FFFFFF;
+    margin: 0;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.header svg {
+    flex-shrink: 0;
+}
+
+/* Account list container */
+.accountList {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    width: 100%;
+}
+
+/* Individual account button */
+.accountButton {
+    width: 100%;
+    height: 60px;
+    background: #3CD4BB;
+    border-radius: 50px;
+    border: none;
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 22px;
+    line-height: 1.2;
+    color: #FFFFFF;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 40px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.accountButton:hover {
+    background: #4DE0C7;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.accountButton:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Content area for Google sign-in */
+.content {
+    width: 100%;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.instructions {
+    text-align: center;
+    color: #FFFFFF;
+}
+
+.instructions p {
+    font-family: 'Inter', sans-serif;
+    font-size: 18px;
+    margin-bottom: 20px;
+}
+
+.googleButton {
+    margin-top: 20px;
+}
+
+/* Loading state */
+.loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    color: #FFFFFF;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #3CD4BB;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.loading p {
+    font-family: 'Inter', sans-serif;
+    font-size: 18px;
+}
+
+/* Error state */
+.error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    color: #FFFFFF;
+    text-align: center;
+}
+
+.error p {
+    font-family: 'Inter', sans-serif;
+    font-size: 18px;
+    color: #ff6b6b;
+}
+
+.retryButton {
+    padding: 12px 30px;
+    background: #3CD4BB;
+    border: none;
+    border-radius: 25px;
+    color: #FFFFFF;
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.retryButton:hover {
+    background: #4DE0C7;
+    transform: translateY(-2px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .popup {
+        padding: 40px 30px;
+        gap: 30px;
+    }
+
+    .title {
+        font-size: 32px;
+    }
+
+    .accountButton {
+        height: 70px;
+        font-size: 24px;
+    }
+
+    .accountList {
+        gap: 24px;
+    }
+}
+
+@media (max-width: 480px) {
+    .popup {
+        padding: 30px 20px;
+        gap: 20px;
+        border-radius: 30px;
+    }
+
+    .title {
+        font-size: 24px;
+    }
+
+    .header svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .accountButton {
+        height: 60px;
+        font-size: 20px;
+        padding: 0 20px;
+    }
+
+    .accountList {
+        gap: 20px;
+    }
+}

@@ -1,3 +1,4 @@
+import os
 import requests
 import urllib.parse
 import json
@@ -13,6 +14,15 @@ from flask_cors import CORS
 from config import Config
 from models import db, User, EmotionLog, VoiceCommandLog, GestureLog, Playlist, PlaylistSong, LikedSong, SongHistory
 from utils.spotify import get_playlist_for_emotion
+
+# Load curated songs fallback (used when Spotify is not linked and JioSaavn fails/empty)
+CURATED_SONGS = {}
+try:
+    curated_path = os.path.join(os.path.dirname(__file__), "curated_songs.json")
+    with open(curated_path, "r", encoding="utf-8") as f:
+        CURATED_SONGS = json.load(f)
+except Exception as e:
+    print(f"⚠️ Unable to load curated_songs.json fallback: {e}")
 
 # Try to import FER for emotion detection (optional - will fallback if not available)
 try:
@@ -67,6 +77,171 @@ def login():
     return jsonify({"token": token}), 200
 
 
+@app.route('/auth/google', methods=['POST'])
+def google_auth():
+    """Authenticate user with Google OAuth token"""
+    try:
+        from google.oauth2 import id_token
+        from google.auth.transport import requests as google_requests
+        
+        data = request.get_json()
+        token = data.get("token")
+        
+        if not token:
+            return jsonify({"error": "Token required"}), 400
+        
+        # Verify the Google ID token
+        try:
+            # Get Google Client ID from config
+            google_client_id = app.config.get("GOOGLE_CLIENT_ID") or os.getenv("GOOGLE_CLIENT_ID")
+            
+            if not google_client_id:
+                return jsonify({"error": "Google OAuth not configured"}), 500
+            
+            # Verify token with Google
+            idinfo = id_token.verify_oauth2_token(
+                token, 
+                google_requests.Request(), 
+                google_client_id
+            )
+            
+            # Extract user information
+            google_id = idinfo.get('sub')
+            email = idinfo.get('email')
+            name = idinfo.get('name')
+            picture = idinfo.get('picture')
+            
+            if not google_id or not email:
+                return jsonify({"error": "Invalid token data"}), 400
+            
+            # Check if user exists with this Google ID
+            user = User.query.filter_by(google_id=google_id).first()
+            
+            if user:
+                # Update existing user's Google info
+                user.google_name = name
+                user.google_email = email
+                user.google_picture = picture
+                user.google_access_token = token
+                db.session.commit()
+            else:
+                # Check if user exists with this email
+                user = User.query.filter_by(email=email).first()
+                
+                if user:
+                    # Link Google account to existing user
+                    user.google_id = google_id
+                    user.google_name = name
+                    user.google_email = email
+                    user.google_picture = picture
+                    user.google_access_token = token
+                    db.session.commit()
+                else:
+                    # Create new user
+                    user = User(
+                        email=email,
+                        google_id=google_id,
+                        google_name=name,
+                        google_email=email,
+                        google_picture=picture,
+                        google_access_token=token,
+                        consent_given=True
+                    )
+                    db.session.add(user)
+                    db.session.commit()
+            
+            # Create JWT token
+            jwt_token = create_access_token(identity=str(user.id))
+            
+            return jsonify({
+                "token": jwt_token,
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "name": user.google_name,
+                    "picture": user.google_picture,
+                    "googleLinked": True
+                }
+            }), 200
+            
+        except ValueError as e:
+            # Invalid token
+            print(f"Google token verification error: {str(e)}")
+            return jsonify({"error": "Invalid Google token"}), 401
+            
+    except Exception as e:
+        print(f"Google auth error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": "Authentication failed", "details": str(e)}), 500
+
+
+@app.route('/auth/google/mock', methods=['POST'])
+def google_auth_mock():
+    """Mock Google authentication for local development (no credentials needed)"""
+    try:
+        data = request.get_json()
+        email = data.get("email")
+        name = data.get("name")
+        picture = data.get("picture")
+        google_id = data.get("google_id")
+        
+        if not email or not google_id:
+            return jsonify({"error": "Email and google_id required"}), 400
+        
+        # Check if user exists with this Google ID
+        user = User.query.filter_by(google_id=google_id).first()
+        
+        if user:
+            # Update existing user's Google info
+            user.google_name = name
+            user.google_email = email
+            user.google_picture = picture
+            db.session.commit()
+        else:
+            # Check if user exists with this email
+            user = User.query.filter_by(email=email).first()
+            
+            if user:
+                # Link Google account to existing user
+                user.google_id = google_id
+                user.google_name = name
+                user.google_email = email
+                user.google_picture = picture
+                db.session.commit()
+            else:
+                # Create new user
+                user = User(
+                    email=email,
+                    google_id=google_id,
+                    google_name=name,
+                    google_email=email,
+                    google_picture=picture,
+                    consent_given=True
+                )
+                db.session.add(user)
+                db.session.commit()
+        
+        # Create JWT token
+        jwt_token = create_access_token(identity=str(user.id))
+        
+        return jsonify({
+            "token": jwt_token,
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "name": user.google_name,
+                "picture": user.google_picture,
+                "googleLinked": True
+            }
+        }), 200
+        
+    except Exception as e:
+        print(f"Mock Google auth error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": "Authentication failed", "details": str(e)}), 500
+
 @app.route('/api/me', methods=['GET'])
 @jwt_required()
 def get_me():
@@ -118,6 +293,21 @@ def ensure_valid_spotify_token(user):
 @jwt_required()
 def get_spotify_login_url():
     """Get Spotify OAuth login URL - returns JSON with URL"""
+    # Check if Spotify credentials are configured
+    if not app.config.get("SPOTIFY_CLIENT_ID") or not app.config.get("SPOTIFY_CLIENT_SECRET"):
+        return jsonify({
+            "error": "Spotify credentials not configured",
+            "message": "Please configure Spotify credentials in your .env file"
+        }), 500
+    
+    # Check if credentials are still placeholders
+    if (app.config.get("SPOTIFY_CLIENT_ID") == "your-spotify-client-id" or 
+        app.config.get("SPOTIFY_CLIENT_SECRET") == "your-spotify-client-secret"):
+        return jsonify({
+            "error": "Spotify credentials not configured",
+            "message": "Please update your .env file with actual Spotify Client ID and Client Secret from https://developer.spotify.com/dashboard"
+        }), 500
+    
     user_id = get_jwt_identity()
     auth_url = "https://accounts.spotify.com/authorize"
     params = {
@@ -184,6 +374,14 @@ def spotify_callback_complete():
         # Check if Spotify credentials are configured
         if not app.config.get("SPOTIFY_CLIENT_ID") or not app.config.get("SPOTIFY_CLIENT_SECRET"):
             return jsonify({"error": "Spotify credentials not configured"}), 500
+        
+        # Check if credentials are still placeholders
+        if (app.config.get("SPOTIFY_CLIENT_ID") == "your-spotify-client-id" or 
+            app.config.get("SPOTIFY_CLIENT_SECRET") == "your-spotify-client-secret"):
+            return jsonify({
+                "error": "Spotify credentials not configured",
+                "message": "Please update your .env file with actual Spotify Client ID and Client Secret from https://developer.spotify.com/dashboard"
+            }), 500
 
         token_url = "https://accounts.spotify.com/api/token"
         payload = {
@@ -461,43 +659,79 @@ def get_recommendations():
             return jsonify(results), 200
 
     # 🧠 JioSaavn fallback
-    saavn_resp = requests.get(f"https://saavn.dev/api/search/songs?query={urllib.parse.quote(query)}&limit=10")
-    if saavn_resp.status_code != 200:
-        return jsonify({"error": "Failed to fetch recommendations"}), 502
-
-    saavn_data = saavn_resp.json().get("data", [])
     results = []
-    seen_song_ids = set()
-    
-    for s in saavn_data:
-        song_id = s.get("id")
-        # Skip duplicates
-        if song_id in seen_song_ids:
-            continue
-        seen_song_ids.add(song_id)
-        
-        # Get image from JioSaavn response
-        images = s.get("image", [])
-        image_url = None
-        if images:
-            # Get the highest quality image (usually the last one or largest)
-            if isinstance(images, list) and len(images) > 0:
-                image_url = images[-1].get("link") if isinstance(images[-1], dict) else images[-1]
-            elif isinstance(images, dict):
-                image_url = images.get("link")
-        
-        results.append({
-            "id": song_id,
-            "title": s.get("name"),
-            "artist": ", ".join(a["name"] for a in s.get("artists", [])),
-            "album": s.get("album", {}).get("name"),
-            "url": s.get("url"),
-            "imageUrl": image_url,
-            "language": language,
-            "emotion": query_emotion,
-            "source": "JioSaavn",
-            "wellbeing_mode": wellbeing_mode
-        })
+    try:
+        saavn_resp = requests.get(f"https://saavn.dev/api/search/songs?query={urllib.parse.quote(query)}&limit=10")
+        if saavn_resp.status_code == 200:
+            saavn_data = saavn_resp.json().get("data", [])
+            seen_song_ids = set()
+            
+            for s in saavn_data:
+                song_id = s.get("id")
+                # Skip duplicates
+                if song_id in seen_song_ids:
+                    continue
+                seen_song_ids.add(song_id)
+                
+                # Get image from JioSaavn response
+                images = s.get("image", [])
+                image_url = None
+                if images:
+                    # Get the highest quality image (usually the last one or largest)
+                    if isinstance(images, list) and len(images) > 0:
+                        image_url = images[-1].get("link") if isinstance(images[-1], dict) else images[-1]
+                    elif isinstance(images, dict):
+                        image_url = images.get("link")
+                
+                results.append({
+                    "id": song_id,
+                    "title": s.get("name"),
+                    "artist": ", ".join(a["name"] for a in s.get("artists", [])),
+                    "album": s.get("album", {}).get("name"),
+                    "url": s.get("url"),
+                    "imageUrl": image_url,
+                    "language": language,
+                    "emotion": query_emotion,
+                    "source": "JioSaavn",
+                    "wellbeing_mode": wellbeing_mode
+                })
+    except Exception as e:
+        print(f"JioSaavn fallback error: {e}")
+
+    # 🎵 Curated fallback if no JioSaavn results
+    if not results:
+        try:
+            lang_songs = CURATED_SONGS.get(language, {})
+            emotion_key = emotion.lower()
+            curated_list = lang_songs.get(emotion_key) or lang_songs.get(query_emotion.lower()) or []
+            for idx, song in enumerate(curated_list):
+                spotify_uri = song.get("spotifyUri")
+                spotify_url = None
+                spotify_id = None
+                if spotify_uri and spotify_uri.startswith("spotify:track:"):
+                    spotify_id = spotify_uri.replace("spotify:track:", "")
+                    spotify_url = f"https://open.spotify.com/track/{spotify_id}"
+
+                results.append({
+                    "id": f"curated-{language}-{emotion_key}-{idx}",
+                    "title": song.get("title"),
+                    "artist": song.get("artist"),
+                    "album": song.get("album", ""),
+                    "spotifyUri": spotify_uri,
+                    "spotifyId": spotify_id,
+                    "spotifyUrl": spotify_url,
+                    "imageUrl": song.get("imageUrl") or "/images/song-1.png",
+                    "language": language,
+                    "emotion": query_emotion,
+                    "source": "Curated",
+                    "wellbeing_mode": wellbeing_mode
+                })
+        except Exception as e:
+            print(f"Curated fallback error: {e}")
+
+    if not results:
+        return jsonify({"error": "No recommendations available. Try another emotion/language."}), 404
+
     return jsonify(results), 200
 
 
@@ -885,13 +1119,49 @@ def get_trending_songs():
         except Exception as e:
             print(f"Error fetching JioSaavn trending: {e}")
     
-    # Default fallback
+    # Curated fallback
+    if not songs_data:
+        try:
+            # Flatten curated songs across languages/emotions
+            for lang, emo_map in CURATED_SONGS.items():
+                for emo, tracks in emo_map.items():
+                    for idx, track in enumerate(tracks):
+                        spotify_uri = track.get("spotifyUri")
+                        spotify_id = None
+                        spotify_url = None
+                        if spotify_uri and spotify_uri.startswith("spotify:track:"):
+                            spotify_id = spotify_uri.replace("spotify:track:", "")
+                            spotify_url = f"https://open.spotify.com/track/{spotify_id}"
+                        songs_data.append({
+                            "id": f"curated-{lang}-{emo}-{idx}",
+                            "title": track.get("title"),
+                            "subtitle": track.get("artist"),
+                            "artist": track.get("artist"),
+                            "album": track.get("album", ""),
+                            "imageUrl": track.get("imageUrl") or "/images/song-1.png",
+                            "spotifyUri": spotify_uri,
+                            "spotifyId": spotify_id,
+                            "spotifyUrl": spotify_url,
+                            "source": "Curated",
+                            "language": lang,
+                            "emotion": emo
+                        })
+                        if len(songs_data) >= 40:
+                            break
+                    if len(songs_data) >= 40:
+                        break
+                if len(songs_data) >= 40:
+                    break
+        except Exception as e:
+            print(f"Curated trending fallback error: {e}")
+
+    # Default static fallback
     if not songs_data:
         songs_data = [
-            {"id": 1, "title": "Blue Eyes", "subtitle": "Honey Singh", "imageUrl": "/images/song-1.png"},
-            {"id": 2, "title": "Photograph", "subtitle": "Ed Sheeran", "imageUrl": "/images/song-2.png"},
-            {"id": 3, "title": "Dil Jhoom", "subtitle": "Arijjit Singh", "imageUrl": "/images/song-3.png"},
-            {"id": 4, "title": "APT", "subtitle": "Rose & Bruno Mars", "imageUrl": "/images/song-4.png"}
+            {"id": 1, "title": "Blue Eyes", "subtitle": "Honey Singh", "artist": "Honey Singh", "imageUrl": "/images/song-1.png", "url": "https://www.jiosaavn.com/song/blue-eyes/BDkJQA9zVHU", "source": "Curated"},
+            {"id": 2, "title": "Photograph", "subtitle": "Ed Sheeran", "artist": "Ed Sheeran", "imageUrl": "/images/song-2.png", "url": "https://www.jiosaavn.com/song/photograph/LyBRaxVAc3k", "source": "Curated"},
+            {"id": 3, "title": "Dil Jhoom", "subtitle": "Arijit Singh", "artist": "Arijit Singh", "imageUrl": "/images/song-3.png", "url": "https://www.jiosaavn.com/song/dil-jhoom/JQ4sBBsIbmA", "source": "Curated"},
+            {"id": 4, "title": "APT", "subtitle": "Rose & Bruno Mars", "artist": "Rose & Bruno Mars", "imageUrl": "/images/song-4.png", "url": "https://www.jiosaavn.com/song/apt/PSwpfzxBeHk", "source": "Curated"}
         ]
     
     return jsonify(songs_data), 200

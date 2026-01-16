@@ -13,8 +13,8 @@
 /* Close button in top right of image with white shadow */
 .closeButton {
   position: absolute;
-  top: 30px;
-  right: 30px;
+  top: 40px;
+  right: 40px;
   width: 40px;
   height: 40px;
   display: flex;
@@ -60,8 +60,10 @@
 /* Figma positions are relative to frame (1504x1313), container is at (49, 51) */
 .leftContent {
   position: absolute;
-  left: 54px; /* 103 - 49 (frame x - container x) */
-  top: 241px; /* 292 - 51 (frame y - container y) */
+  left: 54px;
+  /* 103 - 49 (frame x - container x) */
+  top: 241px;
+  /* 292 - 51 (frame y - container y) */
   width: 476px;
   display: flex;
   flex-direction: column;
@@ -79,8 +81,10 @@
   width: 125px;
   height: 58px;
   margin: 0;
-  margin-bottom: 96px; /* Gap to email label: 446 - 292 - 58 = 96px */
-  margin-left: 128px; /* 231 - 103 (title x - leftContent x) */
+  margin-bottom: 96px;
+  /* Gap to email label: 446 - 292 - 58 = 96px */
+  margin-left: 128px;
+  /* 231 - 103 (title x - leftContent x) */
 }
 
 .inputGroup {
@@ -100,16 +104,19 @@
   text-align: center;
   color: #FFFFFF;
   margin: 0;
-  margin-bottom: 29px; /* Gap between label and input: 222 - 193 = 29px */
+  margin-bottom: 29px;
+  /* Gap between label and input: 222 - 193 = 29px */
   width: 100%;
 }
 
 .inputGroup:nth-of-type(1) {
-  margin-bottom: 96px; /* Gap to password label: 389 - 293 = 96px */
+  margin-bottom: 96px;
+  /* Gap to password label: 389 - 293 = 96px */
 }
 
 .inputGroup:nth-of-type(2) {
-  margin-bottom: 124px; /* Gap before arrow button: 636 - 512 = 124px */
+  margin-bottom: 124px;
+  /* Gap before arrow button: 636 - 512 = 124px */
 }
 
 .inputField {
@@ -139,8 +146,10 @@
 
 .arrowButton {
   position: absolute;
-  left: 132px; /* 235 - 103 (arrow x - leftContent x) */
-  top: 636px; /* 928 - 241 (arrow y - leftContent y) */
+  left: 132px;
+  /* 235 - 103 (arrow x - leftContent x) */
+  top: 636px;
+  /* 928 - 241 (arrow y - leftContent y) */
   width: 122.17px;
   height: 122.17px;
   background: transparent;
@@ -173,8 +182,10 @@
 /* Image is at frame x:633, container is at frame x:49, so relative to container: 633-49=584 */
 .rightImage {
   position: absolute;
-  left: 584px; /* 633 - 49 (frame x - container x) */
-  top: 29px; /* 80 - 51 (frame y - container y) */
+  left: 584px;
+  /* 633 - 49 (frame x - container x) */
+  top: 29px;
+  /* 80 - 51 (frame y - container y) */
   width: 796px;
   height: 1157px;
   border-radius: 86px;
@@ -235,4 +246,3 @@
     margin: 40px auto 0;
   }
 }
-

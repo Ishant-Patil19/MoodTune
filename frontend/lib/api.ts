@@ -4,7 +4,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 // Helper function to get auth token from localStorage
 const getAuthToken = (): string | null => {
   if (typeof window !== 'undefined') {
-    return localStorage.getItem('auth_token');
+    return localStorage.getItem('access_token');
   }
   return null;
 };
@@ -33,7 +33,7 @@ const apiRequest = async (
   if (response.status === 401) {
     // Token expired or invalid - clear it
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('auth_token');
+      localStorage.removeItem('access_token');
       window.location.href = '/login';
     }
     throw new Error('Unauthorized');
@@ -71,14 +71,14 @@ export const authAPI = {
 
     const data = await response.json();
     if (data.token && typeof window !== 'undefined') {
-      localStorage.setItem('auth_token', data.token);
+      localStorage.setItem('access_token', data.token);
     }
     return data;
   },
 
   logout: () => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('auth_token');
+      localStorage.removeItem('access_token');
     }
   },
 
@@ -131,7 +131,7 @@ export const musicAPI = {
     if (wellbeing !== undefined) params.append('wellbeing', wellbeing.toString());
 
     const response = await apiRequest(`/api/recommendations?${params.toString()}`);
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || 'Failed to fetch recommendations');
@@ -146,7 +146,7 @@ export const musicAPI = {
     params.append('type', type);
 
     const response = await apiRequest(`/api/search?${params.toString()}`);
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || 'Search failed');

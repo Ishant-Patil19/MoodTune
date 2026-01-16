@@ -19,9 +19,18 @@ class User(db.Model):
     spotify_access_token = db.Column(db.Text)
     spotify_refresh_token = db.Column(db.Text)
 
+    # Google OAuth fields
+    google_id = db.Column(db.String(120), unique=True)
+    google_name = db.Column(db.String(120))
+    google_email = db.Column(db.String(120))
+    google_picture = db.Column(db.Text)
+    google_access_token = db.Column(db.Text)
+    google_refresh_token = db.Column(db.Text)
+
     emotions = db.relationship('EmotionLog', backref='user', lazy=True)
     voice_commands = db.relationship('VoiceCommandLog', backref='user', lazy=True)
     gestures = db.relationship('GestureLog', backref='user', lazy=True)
+
 
 class EmotionLog(db.Model):
     __tablename__ = 'emotion_logs'  # ✅ Explicit name
