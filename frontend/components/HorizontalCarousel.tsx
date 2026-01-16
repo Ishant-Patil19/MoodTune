@@ -63,15 +63,15 @@ export default function HorizontalCarousel({
       <div className={styles.sectionHeader}>
         <h2 className={styles.sectionTitle}>{title}</h2>
         <div className={styles.navigationButtons}>
-          <button 
-            className={styles.navButton} 
+          <button
+            className={styles.navButton}
             onClick={scrollLeft}
             aria-label="Scroll left"
           >
             ‹
           </button>
-          <button 
-            className={styles.navButton} 
+          <button
+            className={styles.navButton}
             onClick={scrollRight}
             aria-label="Scroll right"
           >
@@ -79,14 +79,14 @@ export default function HorizontalCarousel({
           </button>
         </div>
       </div>
-      
+
       <div className={styles.carouselContainer} ref={scrollContainerRef}>
         <div className={styles.carouselTrack}>
           {items.map((item, index) => {
             const imageUrl = item[imageKey] || '/images/play-icon.png'
             const itemTitle = item[titleKey] || 'Unknown'
             const itemSubtitle = item[subtitleKey] || ''
-            
+
             // Truncate title if too long (max 30 characters)
             const truncatedTitle = itemTitle.length > 30 ? itemTitle.substring(0, 27) + '...' : itemTitle
             const truncatedSubtitle = itemSubtitle.length > 35 ? itemSubtitle.substring(0, 32) + '...' : itemSubtitle
@@ -96,12 +96,12 @@ export default function HorizontalCarousel({
                 key={item.id || index}
                 className={styles.carouselItem}
                 onClick={() => onItemClick?.(item)}
-                style={{ 
+                style={{
                   cursor: onItemClick ? 'pointer' : 'default',
                   '--item-width': `${itemWidth}px`
                 } as React.CSSProperties}
               >
-                <div 
+                <div
                   className={`${styles.itemImage} ${circularImages ? styles.circular : ''}`}
                   style={{ width: itemWidth, height: itemHeight }}
                 >

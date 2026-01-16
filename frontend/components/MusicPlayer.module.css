@@ -1,32 +1,35 @@
 .musicPlayer {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  width: 400px;
-  min-height: 200px;
+  border-radius: 0;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  min-height: 120px;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   overflow: hidden;
   user-select: none;
+  align-items: center;
+  padding: 0 2rem;
+  gap: 2rem;
 }
 
 .musicPlayer.minimized {
-  width: 300px;
-  min-height: auto;
+  min-height: 60px;
 }
 
 .playerHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  cursor: grab;
+  padding: 0;
+  background: transparent;
+  color: #333;
+  flex: 0 0 auto;
+  min-width: 300px;
 }
 
 .playerHeader:active {
-  cursor: grabbing;
+  cursor: default;
 }
 
 .playerInfo {
@@ -38,8 +41,8 @@
 }
 
 .albumArt {
-  width: 40px;
-  height: 40px;
+  width: 60px;
+  height: 60px;
   border-radius: 4px;
   object-fit: cover;
   flex-shrink: 0;
@@ -51,19 +54,21 @@
 }
 
 .songTitle {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: #333;
 }
 
 .songArtist {
-  font-size: 12px;
-  opacity: 0.9;
+  font-size: 14px;
+  opacity: 0.7;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: #666;
 }
 
 .headerControls {
@@ -72,36 +77,38 @@
 }
 
 .controlButton {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(102, 126, 234, 0.1);
   border: none;
-  color: white;
-  width: 28px;
-  height: 28px;
-  border-radius: 4px;
+  color: #667eea;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 18px;
-  transition: background 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .controlButton:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(102, 126, 234, 0.2);
+  transform: scale(1.1);
 }
 
 .controlButton:disabled {
-  opacity: 0.5;
+  opacity: 0.3;
   cursor: not-allowed;
 }
 
 .playerContent {
-  padding: 16px;
-  background: #f8f9fa;
+  padding: 0;
+  background: transparent;
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  max-width: 600px;
 }
 
 .noEmbed {
@@ -137,7 +144,11 @@
 }
 
 .progressContainer {
-  padding: 0 16px 8px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 0;
 }
 
 .progressBar {
@@ -159,9 +170,10 @@
   justify-content: center;
   align-items: center;
   gap: 16px;
-  padding: 12px 16px;
-  background: white;
-  border-top: 1px solid #e0e0e0;
+  padding: 0;
+  background: transparent;
+  border-top: none;
+  flex: 0 0 auto;
 }
 
 .playButton {
@@ -198,4 +210,3 @@
     transform: translate(-50%, -50%);
   }
 }
-

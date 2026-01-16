@@ -7,16 +7,21 @@ import { useAuth } from '@/contexts/AuthContext'
 import { emotionAPI, musicAPI, spotifyAPI, featuredAPI } from '@/lib/api'
 import { useRouter } from 'next/navigation'
 import HorizontalCarousel from '@/components/HorizontalCarousel'
+import CircularCarousel from '@/components/CircularCarousel'
 import MusicPlayer from '@/components/MusicPlayer'
 import styles from './page.module.css'
 
 interface Song {
+  id?: string
   title: string
-  artist: string
+  artist?: string
+  subtitle?: string
   album?: string
   spotifyUri?: string
+  spotifyId?: string
   url?: string
-  source: string
+  imageUrl?: string
+  source?: string
   emotion?: string
   language?: string
 }
@@ -50,12 +55,12 @@ export default function HomeAfterLogin() {
   const streamRef = useRef<MediaStream | null>(null)
   const searchBarRef = useRef<HTMLDivElement>(null)
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
-  const [currentSong, setCurrentSong] = useState<Song | null>(null)
+  const [currentSong, setCurrentSong] = useState<any | null>(null)
   const [showPlayer, setShowPlayer] = useState(false)
-  const [playQueue, setPlayQueue] = useState<Song[]>([])
+  const [playQueue, setPlayQueue] = useState<any[]>([])
 
   const languages = ['Hindi', 'English', 'Bengali', 'Marathi', 'Telugu', 'Tamil']
-  
+
   // Mental well-being triggers (negative emotions)
   const MENTAL_WELLBEING_TRIGGERS = ["sad", "depressed", "angry", "stressed", "fear", "anxious"]
 
@@ -124,11 +129,11 @@ export default function HomeAfterLogin() {
 
   useEffect(() => {
     if (authLoading || !isAuthenticated) return
-    
+
     // Check for Spotify callback code in URL or sessionStorage
     const urlParams = new URLSearchParams(window.location.search)
     let spotifyCode = urlParams.get('spotify_code')
-    
+
     // Also check sessionStorage (in case user was redirected from login)
     if (!spotifyCode && typeof window !== 'undefined') {
       spotifyCode = sessionStorage.getItem('spotify_code')
@@ -136,7 +141,7 @@ export default function HomeAfterLogin() {
         sessionStorage.removeItem('spotify_code')
       }
     }
-    
+
     if (spotifyCode) {
       handleSpotifyCallback(spotifyCode)
       // Clean up URL
@@ -159,12 +164,12 @@ export default function HomeAfterLogin() {
 
   const handleAllowCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
           facingMode: 'user',
           width: { ideal: 1280 },
           height: { ideal: 720 }
-        } 
+        }
       })
       streamRef.current = stream
       setShowCameraModal(false)
@@ -223,11 +228,11 @@ export default function HomeAfterLogin() {
     try {
       setLoadingRecommendations(true)
       const result = await emotionAPI.detectFromImage(imageData)
-      
+
       if (result.emotion) {
         setDetectedEmotion(result.emotion)
         await emotionAPI.logEmotion(result.emotion)
-        
+
         // Check if emotion triggers mental well-being mode
         const emotionLower = result.emotion.toLowerCase()
         if (MENTAL_WELLBEING_TRIGGERS.includes(emotionLower)) {
@@ -252,13 +257,13 @@ export default function HomeAfterLogin() {
     setSelectedLanguage(language)
     setShowLanguageModal(false)
     setShowSpotifyPrompt(false)
-    
+
     // Check if Spotify is linked, if not, prompt user (unless skipping)
     if (!skipSpotifyCheck && !user?.spotifyLinked) {
       setShowSpotifyPrompt(true)
       return
     }
-    
+
     // Fetch recommendations with wellbeing mode
     await fetchRecommendations(detectedEmotion, language, wellbeingMode)
   }
@@ -271,6 +276,7 @@ export default function HomeAfterLogin() {
   }
 
   const fetchRecommendations = async (emotion: string | null, language: string, wellbeing: boolean = false) => {
+    // Need both emotion and language to request recommendations
     if (emotion && language) {
       try {
         setLoadingRecommendations(true)
@@ -288,27 +294,27 @@ export default function HomeAfterLogin() {
 
   // Handle song click - open in player or external link
   const handleSongClick = (song: any, context?: Song[]) => {
-    // Check if we can embed (Spotify or JioSaavn with URL)
-    const canEmbed = (song.spotifyUri || song.spotifyId) || (song.url && (song.source === 'JioSaavn' || song.source === 'jiosaavn'))
-    
+    // We can show the player for any song that has either a Spotify ID/URI or a streaming URL
+    const canEmbed = !!(song.spotifyUri || song.spotifyId || song.url)
+
     if (canEmbed) {
       // Build play queue from context (recommendations, trending, search results)
-      const queue = context && context.length > 0 
+      const queue = context && context.length > 0
         ? context.map(s => ({
-            id: s.id || s.spotifyUri || s.url,
-            title: s.title,
-            artist: s.artist || s.subtitle || 'Unknown Artist',
-            album: s.album,
-            spotifyUri: s.spotifyUri,
-            spotifyId: s.spotifyId,
-            url: s.url,
-            imageUrl: s.imageUrl,
-            source: s.source || 'Unknown'
-          }))
+          id: s.id || s.spotifyUri || s.url,
+          title: s.title,
+          artist: s.artist || s.subtitle || 'Unknown Artist',
+          album: s.album,
+          spotifyUri: s.spotifyUri,
+          spotifyId: s.spotifyId,
+          url: s.url,
+          imageUrl: s.imageUrl,
+          source: s.source || 'Unknown'
+        }))
         : []
-      
+
       setPlayQueue(queue)
-      
+
       // Open in picture-in-picture player
       setCurrentSong({
         id: song.id || song.spotifyUri || song.url,
@@ -352,7 +358,7 @@ export default function HomeAfterLogin() {
   const handleNextSong = () => {
     // Find current song index in queue
     if (!currentSong || playQueue.length === 0) return
-    
+
     const currentIndex = playQueue.findIndex(s => s.id === currentSong.id)
     if (currentIndex < playQueue.length - 1) {
       setCurrentSong(playQueue[currentIndex + 1])
@@ -362,7 +368,7 @@ export default function HomeAfterLogin() {
   const handlePreviousSong = () => {
     // Find current song index in queue
     if (!currentSong || playQueue.length === 0) return
-    
+
     const currentIndex = playQueue.findIndex(s => s.id === currentSong.id)
     if (currentIndex > 0) {
       setCurrentSong(playQueue[currentIndex - 1])
@@ -372,7 +378,7 @@ export default function HomeAfterLogin() {
   // Handle artist click - search for artist's songs or show artist details
   const handleArtistClick = async (artist: any) => {
     const artistName = artist.title || artist.name || 'Unknown Artist'
-    
+
     if (artist.spotifyId) {
       // Open Spotify artist page
       const spotifyUrl = `https://open.spotify.com/artist/${artist.spotifyId}`
@@ -511,21 +517,21 @@ export default function HomeAfterLogin() {
   const handleSuggestionClick = async (e: React.MouseEvent, suggestion: Song) => {
     e.preventDefault()
     e.stopPropagation()
-    
+
     // Hide suggestions immediately
     setShowSuggestions(false)
-    
+
     // Update search query and show results (don't play directly)
     const query = `${suggestion.title} ${suggestion.artist}`.trim()
     setSearchQuery(query)
-    
+
     try {
       setLoadingSuggestions(true)
       const results = await musicAPI.search(query)
       setSearchResults(results)
       setShowSearchResults(true)
       setLoadingSuggestions(false)
-      
+
       // Scroll to search results
       setTimeout(() => {
         const searchSection = document.getElementById('search-results')
@@ -591,7 +597,7 @@ export default function HomeAfterLogin() {
               priority
             />
           </Link>
-          
+
           <div className={styles.searchContainer} style={{ position: 'relative' }}>
             <form onSubmit={handleSearch}>
               <div ref={searchBarRef} className={styles.searchBar} style={{ position: 'relative' }}>
@@ -611,15 +617,15 @@ export default function HomeAfterLogin() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={handleSearchInputFocus}
                   onBlur={handleSearchInputBlur}
-                  style={{ 
-                    border: 'none', 
-                    background: 'transparent', 
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
                     outline: 'none',
                     flex: 1,
                     padding: '0 10px'
                   }}
                 />
-                
+
                 {/* Search Suggestions Dropdown */}
                 {showSuggestions && searchQuery.trim() && (
                   <div style={{
@@ -718,9 +724,9 @@ export default function HomeAfterLogin() {
               </div>
             </form>
           </div>
-          
-          <div 
-            className={styles.cameraIcon} 
+
+          <div
+            className={styles.cameraIcon}
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
@@ -737,9 +743,9 @@ export default function HomeAfterLogin() {
               style={{ pointerEvents: 'none' }}
             />
           </div>
-          
-          <Link 
-            href="/personalization-settings" 
+
+          <Link
+            href="/personalization-settings"
             className={styles.settingsIcon}
             style={{ zIndex: 300, pointerEvents: 'auto' }}
             onClick={(e) => e.stopPropagation()}
@@ -753,9 +759,9 @@ export default function HomeAfterLogin() {
               unoptimized
             />
           </Link>
-          
-          <Link 
-            href="/edit-profile" 
+
+          <Link
+            href="/edit-profile"
             className={styles.profileIcon}
             style={{ zIndex: 300, pointerEvents: 'auto' }}
             onClick={(e) => e.stopPropagation()}
@@ -789,9 +795,9 @@ export default function HomeAfterLogin() {
             cursor: 'pointer',
             transition: 'transform 0.2s ease'
           }}
-          onClick={() => setShowCameraModal(true)}
-          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            onClick={() => setShowCameraModal(true)}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
           >
             <div>
               <h3 style={{ margin: 0, marginBottom: '0.5rem', fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -918,7 +924,7 @@ export default function HomeAfterLogin() {
           <section id="search-results" className={styles.section}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h2 className={styles.sectionTitle}>Search Results</h2>
-              <button 
+              <button
                 onClick={() => {
                   setShowSearchResults(false)
                   setSearchQuery('')
@@ -940,11 +946,11 @@ export default function HomeAfterLogin() {
             }}>
               {searchResults.map((song, index) => (
                 <div key={song.id || index} className={styles.songCard} style={{ width: '252.38px', flexShrink: 0 }}>
-                  <div 
+                  <div
                     onClick={() => handleSongClick(song, searchResults)}
-                    style={{ 
-                      width: '252.38px', 
-                      height: '199px', 
+                    style={{
+                      width: '252.38px',
+                      height: '199px',
                       borderRadius: '20px',
                       overflow: 'hidden',
                       marginBottom: '11px',
@@ -1018,20 +1024,16 @@ export default function HomeAfterLogin() {
             <div style={{ padding: '2rem', textAlign: 'center', color: 'white' }}>Loading recommendations...</div>
           </section>
         ) : recommendations.length > 0 ? (
-          <HorizontalCarousel
+          <CircularCarousel
             title={`Recommended Songs${detectedEmotion ? ` (${detectedEmotion})` : ' - Most Heard Today'}${wellbeingMode ? ' 💚 Well-being Mode' : ''}${selectedLanguage ? ` - ${selectedLanguage}` : ''}`}
-            items={recommendations.map((song, index) => ({
+            songs={recommendations.map((song, index) => ({
+              ...song,
               id: song.id || song.spotifyUri || song.url || `song-${index}`,
-              title: song.title,
-              subtitle: song.subtitle || song.artist,
-              imageUrl: song.imageUrl || null, // Use null instead of fallback to show placeholder
-              ...song
+              artist: song.artist || song.subtitle || 'Unknown Artist'
             }))}
-            onItemClick={(item) => {
-              handleSongClick(item, recommendations)
+            onSongClick={(song) => {
+              handleSongClick(song, recommendations)
             }}
-            itemWidth={252}
-            itemHeight={199}
           />
         ) : loadingFeatured ? (
           <section className={styles.section}>
@@ -1065,7 +1067,7 @@ export default function HomeAfterLogin() {
               </div>
               <div className={styles.featuredSongInfo}>
                 <p className={styles.featuredSongText}>
-                  {detectedEmotion && !selectedLanguage 
+                  {detectedEmotion && !selectedLanguage
                     ? "Please select a language to get personalized recommendations!"
                     : "Click the camera icon to detect your mood and get personalized recommendations!"
                   }
@@ -1113,8 +1115,11 @@ export default function HomeAfterLogin() {
           <HorizontalCarousel
             title="Industry"
             items={trendingSongs.map((song, index) => ({
-              ...song,
-              subtitle: song.subtitle || song.artist || ''
+              id: song.id || song.spotifyUri || song.url || `trending-${index}`,
+              title: song.title,
+              subtitle: song.subtitle || song.artist || '',
+              imageUrl: song.imageUrl,
+              ...song
             }))}
             onItemClick={(item) => {
               handleSongClick(item, trendingSongs)
@@ -1206,7 +1211,7 @@ export default function HomeAfterLogin() {
             <h2 style={{ margin: '0 0 0.5rem 0', fontSize: '1.5rem' }}>📸 Capture Your Emotion</h2>
             <p style={{ margin: 0, opacity: 0.8 }}>Position your face in the frame and click Capture</p>
           </div>
-          
+
           <div style={{
             position: 'relative',
             borderRadius: '15px',
@@ -1258,7 +1263,7 @@ export default function HomeAfterLogin() {
               </div>
             )}
           </div>
-          
+
           <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem' }}>
             <button
               onClick={capturePhoto}
@@ -1418,13 +1423,13 @@ export default function HomeAfterLogin() {
             <p style={{ marginBottom: '1.5rem' }}>
               We detected your emotion as: <strong>{detectedEmotion}</strong>
               {wellbeingMode && (
-                <span style={{ 
-                  display: 'inline-block', 
-                  marginLeft: '0.5rem', 
-                  padding: '0.25rem 0.75rem', 
-                  background: '#4CAF50', 
-                  color: 'white', 
-                  borderRadius: '15px', 
+                <span style={{
+                  display: 'inline-block',
+                  marginLeft: '0.5rem',
+                  padding: '0.25rem 0.75rem',
+                  background: '#4CAF50',
+                  color: 'white',
+                  borderRadius: '15px',
                   fontSize: '0.85rem',
                   fontWeight: 'bold'
                 }}>
@@ -1518,9 +1523,9 @@ export default function HomeAfterLogin() {
               <button
                 onClick={async () => {
                   setShowSpotifyPrompt(false)
-                  // If language was already selected, fetch recommendations
-                  if (selectedLanguage) {
-                    await fetchRecommendations(selectedLanguage)
+                  // If language and emotion are already available, fetch recommendations without Spotify
+                  if (selectedLanguage && detectedEmotion) {
+                    await fetchRecommendations(detectedEmotion, selectedLanguage, wellbeingMode)
                   } else {
                     // Otherwise, show language selection again
                     setShowLanguageModal(true)

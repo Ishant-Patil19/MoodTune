@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/contexts/AuthContext'
 import styles from './page.module.css'
 
 export default function PrivacySecuritySettings() {
@@ -12,29 +13,30 @@ export default function PrivacySecuritySettings() {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showLogoutModal, setShowLogoutModal] = useState(false)
   const router = useRouter()
+  const { logout } = useAuth()
 
   const handleDeleteAccount = async () => {
     try {
       // Delete account from backend
       // In a real app, this would call an API endpoint to delete the account
       // Example: await fetch('/api/account/delete', { method: 'DELETE' })
-      
+
       // For now, we'll simulate the deletion process
       // In production, you would:
       // 1. Call your API to delete the account
       // 2. Clear any local storage/session data
       // 3. Clear authentication tokens
       // 4. Redirect to sign-up page
-      
+
       // Clear any local storage
       if (typeof window !== 'undefined') {
         localStorage.clear()
         sessionStorage.clear()
       }
-      
+
       // Close the modal
       setShowDeleteModal(false)
-      
+
       // Redirect to sign-up page (user account is deleted and logged out)
       router.push('/signup')
     } catch (error) {
@@ -45,10 +47,12 @@ export default function PrivacySecuritySettings() {
   }
 
   const handleLogout = () => {
-    // Logout user
-    // In a real app, this would clear session/tokens
-    // For now, we'll just redirect to the login page
-    router.push('/login')
+    // Logout user using AuthContext
+    logout()
+    // Close the modal
+    setShowLogoutModal(false)
+    // Redirect to the main landing page
+    router.push('/')
   }
 
   const handleCloseDeleteModal = () => {
@@ -75,7 +79,7 @@ export default function PrivacySecuritySettings() {
               priority
             />
           </Link>
-          
+
           <div className={styles.searchContainer}>
             <div className={styles.searchBar}>
               <Image
@@ -89,7 +93,7 @@ export default function PrivacySecuritySettings() {
               <span className={styles.searchText}>Search</span>
             </div>
           </div>
-          
+
           <div className={styles.cameraIcon}>
             <Image
               src="/images/camera-icon-home.svg"
@@ -99,7 +103,7 @@ export default function PrivacySecuritySettings() {
               unoptimized
             />
           </div>
-          
+
           <Link href="/personalization-settings" className={styles.settingsIcon}>
             <Image
               src="/images/settings-icon.svg"
@@ -109,7 +113,7 @@ export default function PrivacySecuritySettings() {
               unoptimized
             />
           </Link>
-          
+
           <Link href="/edit-profile" className={styles.profileIcon}>
             <Image
               src="/images/profile-icon.svg"
@@ -126,7 +130,7 @@ export default function PrivacySecuritySettings() {
       <section className={styles.settingsSection}>
         <div className={styles.settingsContent}>
           <h1 className={styles.settingsTitle}>Settings</h1>
-          
+
           <div className={styles.profileSection}>
             <div className={styles.profileImageContainer}>
               <Image
@@ -138,7 +142,7 @@ export default function PrivacySecuritySettings() {
                 unoptimized
               />
             </div>
-            
+
             <div className={styles.profileInfo}>
               <h2 className={styles.profileName}>Emily Carter</h2>
               <p className={styles.profileUsername}>@emilytheone</p>
@@ -146,7 +150,7 @@ export default function PrivacySecuritySettings() {
                 Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.
               </p>
             </div>
-            
+
             <Link href="/edit-profile" className={styles.editButton}>
               Edit
             </Link>
@@ -232,8 +236,8 @@ export default function PrivacySecuritySettings() {
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <button className={styles.closeButton} onClick={handleCloseDeleteModal}>
               <svg width="38" height="40" viewBox="0 0 38 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="19" cy="20" r="19" fill="rgba(193, 229, 255, 0.5)"/>
-                <path d="M14.35 14.35L23.65 23.65M23.65 14.35L14.35 23.65" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                <circle cx="19" cy="20" r="19" fill="rgba(193, 229, 255, 0.5)" />
+                <path d="M14.35 14.35L23.65 23.65M23.65 14.35L14.35 23.65" stroke="white" strokeWidth="2" strokeLinecap="round" />
               </svg>
             </button>
 
@@ -260,8 +264,8 @@ export default function PrivacySecuritySettings() {
           <div className={styles.modalContentLogout} onClick={(e) => e.stopPropagation()}>
             <button className={styles.closeButtonLogout} onClick={handleCloseLogoutModal}>
               <svg width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="19" cy="19" r="19" fill="rgba(193, 229, 255, 0.5)"/>
-                <path d="M14.35 14.35L23.65 23.65M23.65 14.35L14.35 23.65" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                <circle cx="19" cy="19" r="19" fill="rgba(193, 229, 255, 0.5)" />
+                <path d="M14.35 14.35L23.65 23.65M23.65 14.35L14.35 23.65" stroke="white" strokeWidth="2" strokeLinecap="round" />
               </svg>
             </button>
 

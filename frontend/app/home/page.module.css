@@ -371,6 +371,8 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  margin-bottom: 140px;
+  /* Space for the fixed music player */
 }
 
 .copyright {
@@ -415,16 +417,21 @@
 
 .cameraModalText {
   position: absolute;
-  left: 76px; /* Similar to logout modal */
-  top: 71px; /* Similar to logout modal */
+  left: 76px;
+  /* Similar to logout modal */
+  top: 71px;
+  /* Similar to logout modal */
   font-family: 'Konkhmer Sleokchher', sans-serif;
   font-weight: 400;
-  font-size: 24px; /* Same as other modals */
+  font-size: 24px;
+  /* Same as other modals */
   line-height: 1.806640625em;
   text-align: center;
   color: #FFFFFF;
-  width: 591.49px; /* Similar to logout modal */
-  height: 86.95px; /* Adjusted for content */
+  width: 591.49px;
+  /* Similar to logout modal */
+  height: 86.95px;
+  /* Adjusted for content */
   margin: 0;
   padding: 0;
   display: flex;
@@ -435,12 +442,15 @@
 
 .cameraModalButtons {
   position: absolute;
-  left: 165px; /* Similar to logout modal */
-  top: 224px; /* Similar to logout modal */
+  left: 165px;
+  /* Similar to logout modal */
+  top: 224px;
+  /* Similar to logout modal */
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 96.74px; /* Same gap as other modals */
+  gap: 96.74px;
+  /* Same gap as other modals */
   width: 437.26px;
   height: 64.9px;
 }
@@ -453,7 +463,8 @@
   border: none;
   font-family: 'Myanmar Khyay', sans-serif;
   font-weight: 400;
-  font-size: 20px; /* Same as other modals */
+  font-size: 20px;
+  /* Same as other modals */
   line-height: 1.3470000267028808em;
   text-align: center;
   color: #FFFFFF;
@@ -473,7 +484,8 @@
   border: none;
   font-family: 'Myanmar Khyay', sans-serif;
   font-weight: 400;
-  font-size: 20px; /* Same as other modals */
+  font-size: 20px;
+  /* Same as other modals */
   line-height: 1.3470000267028808em;
   text-align: center;
   color: #FFFFFF;
@@ -489,4 +501,3 @@
 .declineButton:hover {
   opacity: 0.9;
 }
-

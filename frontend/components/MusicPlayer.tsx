@@ -35,47 +35,10 @@ export default function MusicPlayer({
 }: MusicPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
-  const [position, setPosition] = useState({ x: 0, y: 0 })
-  const [isDragging, setIsDragging] = useState(false)
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [progress, setProgress] = useState(0)
   const playerRef = useRef<HTMLDivElement>(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null)
-
-  // Initialize position on mount
-  useEffect(() => {
-    if (isVisible && typeof window !== 'undefined') {
-      setPosition({
-        x: window.innerWidth - 420,
-        y: window.innerHeight - 500
-      })
-    }
-  }, [isVisible])
-
-  // Handle dragging
-  useEffect(() => {
-    if (!isDragging) return
-
-    const handleMouseMove = (e: MouseEvent) => {
-      setPosition({
-        x: e.clientX - dragOffset.x,
-        y: e.clientY - dragOffset.y
-      })
-    }
-
-    const handleMouseUp = () => {
-      setIsDragging(false)
-    }
-
-    window.addEventListener('mousemove', handleMouseMove)
-    window.addEventListener('mouseup', handleMouseUp)
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove)
-      window.removeEventListener('mouseup', handleMouseUp)
-    }
-  }, [isDragging, dragOffset])
 
   // Handle song changes
   useEffect(() => {
@@ -107,16 +70,6 @@ export default function MusicPlayer({
     }
   }, [song])
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!playerRef.current) return
-    const rect = playerRef.current.getBoundingClientRect()
-    setDragOffset({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
-    })
-    setIsDragging(true)
-  }
-
   const togglePlayPause = () => {
     setIsPlaying(!isPlaying)
   }
@@ -143,7 +96,7 @@ export default function MusicPlayer({
         // Try to use spotifyId as track ID
         trackId = song.spotifyId
       }
-      
+
       if (trackId) {
         return `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0`
       } else if (song.spotifyId) {
@@ -166,22 +119,33 @@ export default function MusicPlayer({
       className={`${styles.musicPlayer} ${isMinimized ? styles.minimized : ''}`}
       style={{
         position: 'fixed',
-        left: `${position.x}px`,
-        top: `${position.y}px`,
-        zIndex: 10000,
-        cursor: isDragging ? 'grabbing' : 'default'
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 9999,
+        width: '100%',
+        maxWidth: '100vw'
       }}
-      onMouseDown={handleMouseDown}
     >
-      {/* Header with controls */}
+      {/* Progress Bar at the top */}
+      <div className={styles.progressContainer}>
+        <div className={styles.progressBar}>
+          <div
+            className={styles.progressFill}
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Song Info on the left */}
       <div className={styles.playerHeader}>
         <div className={styles.playerInfo}>
           {song.imageUrl && (
             <Image
               src={song.imageUrl}
               alt={song.title}
-              width={40}
-              height={40}
+              width={60}
+              height={60}
               className={styles.albumArt}
               unoptimized
             />
@@ -191,114 +155,67 @@ export default function MusicPlayer({
             <div className={styles.songArtist}>{song.artist}</div>
           </div>
         </div>
-        <div className={styles.headerControls}>
-          <button
-            onClick={handleMinimize}
-            className={styles.controlButton}
-            aria-label={isMinimized ? 'Maximize' : 'Minimize'}
-          >
-            {isMinimized ? '□' : '−'}
-          </button>
-          <button
-            onClick={onClose}
-            className={styles.controlButton}
-            aria-label="Close"
-          >
-            ×
-          </button>
-        </div>
       </div>
 
+      {/* Player Controls in the center */}
       {!isMinimized && (
-        <>
-          {/* Player Content */}
-          <div className={styles.playerContent}>
-            {embedUrl ? (
-              embedUrl.includes('spotify.com') ? (
-                <iframe
-                  ref={iframeRef}
-                  src={embedUrl}
-                  width="100%"
-                  height="352"
-                  frameBorder="0"
-                  allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                  loading="lazy"
-                  style={{
-                    borderRadius: '8px',
-                    border: 'none'
-                  }}
-                />
-              ) : (
-                <div className={styles.jiosaavnEmbed}>
-                  <div className={styles.embedMessage}>
-                    <p>🎵 {song.title}</p>
-                    <p>by {song.artist}</p>
-                    <button
-                      onClick={() => window.open(song.url || '', '_blank')}
-                      className={styles.playButton}
-                      style={{
-                        marginTop: '1rem',
-                        padding: '0.75rem 1.5rem',
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        fontSize: '1rem',
-                        fontWeight: '600'
-                      }}
-                    >
-                      Play on JioSaavn
-                    </button>
-                  </div>
-                </div>
-              )
-            ) : (
-              <div className={styles.noEmbed}>
-                <p>Unable to embed this song.</p>
-                <p>Please use the external link to play.</p>
-              </div>
-            )}
-          </div>
-
-          {/* Progress Bar */}
-          <div className={styles.progressContainer}>
-            <div className={styles.progressBar}>
-              <div
-                className={styles.progressFill}
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Player Controls */}
-          <div className={styles.playerControls}>
-            <button
-              onClick={onPrevious}
-              className={styles.controlButton}
-              disabled={!onPrevious}
-              aria-label="Previous"
-            >
-              ⏮
-            </button>
-            <button
-              onClick={togglePlayPause}
-              className={styles.playButton}
-              aria-label={isPlaying ? 'Pause' : 'Play'}
-            >
-              {isPlaying ? '⏸' : '▶'}
-            </button>
-            <button
-              onClick={onNext}
-              className={styles.controlButton}
-              disabled={!onNext}
-              aria-label="Next"
-            >
-              ⏭
-            </button>
-          </div>
-        </>
+        <div className={styles.playerControls}>
+          <button
+            onClick={onPrevious}
+            className={styles.controlButton}
+            disabled={!onPrevious}
+            aria-label="Previous"
+          >
+            ⏮
+          </button>
+          <button
+            onClick={togglePlayPause}
+            className={styles.playButton}
+            aria-label={isPlaying ? 'Pause' : 'Play'}
+          >
+            {isPlaying ? '⏸' : '▶'}
+          </button>
+          <button
+            onClick={onNext}
+            className={styles.controlButton}
+            disabled={!onNext}
+            aria-label="Next"
+          >
+            ⏭
+          </button>
+        </div>
       )}
+
+      {/* Hidden iframe for actual playback */}
+      {!isMinimized && embedUrl && embedUrl.includes('spotify.com') && (
+        <div style={{ display: 'none' }}>
+          <iframe
+            ref={iframeRef}
+            src={embedUrl}
+            width="0"
+            height="0"
+            frameBorder="0"
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+            loading="lazy"
+          />
+        </div>
+      )}
+
+      {/* Close button on the right */}
+      <div className={styles.headerControls}>
+        <button
+          onClick={onClose}
+          className={styles.controlButton}
+          aria-label="Close"
+          style={{
+            fontSize: '24px',
+            width: '36px',
+            height: '36px'
+          }}
+        >
+          ×
+        </button>
+      </div>
     </div>
   )
 }
