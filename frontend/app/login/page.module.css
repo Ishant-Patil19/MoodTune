@@ -121,6 +121,62 @@
   background: rgba(60, 212, 187, 0.5);
 }
 
+.spotifyButton {
+  width: 476px;
+  height: 71px;
+  background: #1DB954;
+  border-radius: 50px;
+  border: none;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 24px;
+  line-height: 1.2102272510528564em;
+  text-align: center;
+  color: #FFFFFF;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  margin-top: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s ease;
+  text-decoration: none;
+  gap: 8px;
+}
+
+.spotifyButton:hover {
+  background: #1ed760;
+}
+
+.googleButton {
+  width: 476px;
+  height: 71px;
+  background: white;
+  border-radius: 50px;
+  border: 1px solid #dadce0;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 24px;
+  line-height: 1.2102272510528564em;
+  text-align: center;
+  color: #3c4043;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  margin-top: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: box-shadow 0.3s ease;
+  text-decoration: none;
+  gap: 8px;
+}
+
+.googleButton:hover {
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
 /* Right side image - positioned relative to main container */
 /* Image is at frame x:632, container is at frame x:49, so relative to container: 632-49=583 */
 .rightImage {

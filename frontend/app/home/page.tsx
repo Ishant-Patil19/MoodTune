@@ -4,8 +4,8 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { emotionAPI, musicAPI, spotifyAPI, featuredAPI, settingsAPI } from '@/lib/api'
-import { useRouter } from 'next/navigation'
+import { emotionAPI, musicAPI, spotifyAPI, featuredAPI, settingsAPI, authAPI } from '@/lib/api'
+import { useRouter, usePathname } from 'next/navigation'
 import HorizontalCarousel from '@/components/HorizontalCarousel'
 import MusicPlayer from '@/components/MusicPlayer'
 import styles from './page.module.css'
@@ -24,10 +24,12 @@ interface Song {
 export default function HomeAfterLogin() {
   const { isAuthenticated, loading: authLoading, user, refreshUser } = useAuth()
   const router = useRouter()
+  const pathname = usePathname()
   const [showCameraModal, setShowCameraModal] = useState(false)
   const [showLanguageModal, setShowLanguageModal] = useState(false)
   const [showSpotifyPrompt, setShowSpotifyPrompt] = useState(false)
   const [showWellbeingPrompt, setShowWellbeingPrompt] = useState(false)
+  const [showFaceDetectionError, setShowFaceDetectionError] = useState(false)
   const [isLinkingSpotify, setIsLinkingSpotify] = useState(false)
   const [isCapturing, setIsCapturing] = useState(false)
   const [detectedEmotion, setDetectedEmotion] = useState<string | null>(null)
@@ -36,14 +38,13 @@ export default function HomeAfterLogin() {
   const [selectedLanguage, setSelectedLanguage] = useState<string>('')
   const [wellbeingMode, setWellbeingMode] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<Song[]>([])
-  const [showSearchResults, setShowSearchResults] = useState(false)
   const [searchSuggestions, setSearchSuggestions] = useState<Song[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [loadingSuggestions, setLoadingSuggestions] = useState(false)
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [featuredPlaylists, setFeaturedPlaylists] = useState<any[]>([])
   const [trendingSongs, setTrendingSongs] = useState<any[]>([])
+  const [industrySongs, setIndustrySongs] = useState<any[]>([])
   const [artists, setArtists] = useState<any[]>([])
   const [loadingFeatured, setLoadingFeatured] = useState(true)
   const [userLanguage, setUserLanguage] = useState<string | null>(null) // Start with null to indicate not loaded yet
@@ -57,6 +58,8 @@ export default function HomeAfterLogin() {
   const [currentSong, setCurrentSong] = useState<Song | null>(null)
   const [showPlayer, setShowPlayer] = useState(false)
   const [playQueue, setPlayQueue] = useState<Song[]>([])
+  const [profile, setProfile] = useState<any>(null)
+  const [profileLoading, setProfileLoading] = useState(true)
 
   const languages = ['Hindi', 'English', 'Bengali', 'Marathi', 'Telugu', 'Tamil', 'Global']
   
@@ -130,12 +133,79 @@ export default function HomeAfterLogin() {
         // Delay to ensure backend has processed the update
         setTimeout(() => {
           fetchUserLanguage()
+          fetchProfile() // Also refresh profile when returning from edit profile
         }, 500)
       }
     }
     window.addEventListener('focus', handleFocus)
     return () => window.removeEventListener('focus', handleFocus)
   }, [isAuthenticated, authLoading])
+
+  // Fetch profile on mount
+  useEffect(() => {
+    if (user) {
+      fetchProfile()
+    }
+  }, [user])
+
+  // Refetch profile when page becomes visible (e.g., when returning from edit profile)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user) {
+        // Add delay to ensure backend has processed the update
+        setTimeout(() => {
+          fetchProfile()
+        }, 500)
+      }
+    }
+
+    window.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      window.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [user])
+
+  // Refetch profile when pathname changes (e.g., returning from edit-profile)
+  useEffect(() => {
+    if (pathname === '/home' && user) {
+      // Small delay to ensure navigation is complete
+      const timer = setTimeout(() => {
+        fetchProfile()
+      }, 300)
+      return () => clearTimeout(timer)
+    }
+  }, [pathname, user])
+
+  const fetchProfile = async () => {
+    try {
+      setProfileLoading(true)
+      const profileData = await authAPI.getProfile()
+      setProfile(profileData)
+    } catch (error) {
+      console.error('Failed to fetch profile:', error)
+    } finally {
+      setProfileLoading(false)
+    }
+  }
+
+  const getDisplayName = () => {
+    if (profile?.first_name) return profile.first_name
+    if (profile?.username) return profile.username
+    if (user?.email) return user.email.split('@')[0]
+    return 'User'
+  }
+
+  const getProfilePicture = () => {
+    // Don't show fallback while loading - wait for profile data
+    if (profileLoading) return undefined
+    if (profile?.profile_picture_url) return profile.profile_picture_url
+    // No static fallback - return null or empty string when Spotify is linked
+    if (user?.spotifyLinked) {
+      return null
+    }
+    return '/images/profile-emily.png'
+  }
 
   const fetchTrendingForRecommended = async () => {
     if (!userLanguage) {
@@ -146,8 +216,8 @@ export default function HomeAfterLogin() {
     try {
       setLoadingRecommendations(true)
       const songs = await featuredAPI.getTrendingSongs(userLanguage)
-      // Set trending songs as recommendations
-      setRecommendations(songs.slice(0, 20)) // Limit to 20 trending songs
+      // Set trending songs as recommendations - limit to 15 items
+      setRecommendations(songs.slice(0, 15))
     } catch (error) {
       console.error('Error fetching trending songs for recommendations:', error)
       setRecommendations([])
@@ -180,9 +250,24 @@ export default function HomeAfterLogin() {
         })
       ])
       console.log('[fetchFeaturedContent] Received artists:', artistsData.length, 'for language:', userLanguage)
-      setFeaturedPlaylists(playlists)
-      setTrendingSongs(songs)
-      setArtists(artistsData)
+      // Limit to 15 items per section for better loading speed
+      setFeaturedPlaylists(playlists.slice(0, 15))
+      setTrendingSongs(songs.slice(0, 15))
+      setArtists(artistsData.slice(0, 15))
+      
+      // Fetch industry songs separately, excluding trending song IDs to ensure different content
+      const trendingSongIds = songs
+        .slice(0, 15)
+        .map(s => s.id || s.spotifyId || s.spotifyUri)
+        .filter(Boolean)
+      
+      try {
+        const industrySongsData = await featuredAPI.getIndustrySongs(userLanguage, trendingSongIds)
+        setIndustrySongs(industrySongsData.slice(0, 15))
+      } catch (e) {
+        console.error('Error fetching industry songs:', e)
+        setIndustrySongs([])
+      }
     } catch (error) {
       console.error('Error fetching featured content:', error)
     } finally {
@@ -196,6 +281,20 @@ export default function HomeAfterLogin() {
       await spotifyAPI.completeCallback(code)
       await refreshUser()
       setShowSpotifyPrompt(false)
+      
+      // Reset the fetched content ref to force re-fetch of featured content
+      hasFetchedContentRef.current = ''
+      
+      // Refresh featured content if language is available
+      if (userLanguage && languageLoadedRef.current) {
+        console.log('[Spotify Link] Refreshing featured content after Spotify link')
+        await fetchFeaturedContent()
+        // Also refresh trending songs for Recommended Songs section
+        if (!detectedEmotion) {
+          await fetchTrendingForRecommended()
+        }
+      }
+      
       alert('Spotify account linked successfully!')
     } catch (error: any) {
       console.error('Spotify linking error:', error)
@@ -204,7 +303,7 @@ export default function HomeAfterLogin() {
     } finally {
       setIsLinkingSpotify(false)
     }
-  }, [refreshUser])
+  }, [refreshUser, userLanguage, fetchFeaturedContent, fetchTrendingForRecommended, detectedEmotion])
 
   useEffect(() => {
     if (authLoading || !isAuthenticated) return
@@ -293,6 +392,12 @@ export default function HomeAfterLogin() {
 
   // Handle camera icon click - check permission first
   const handleCameraIconClick = async () => {
+    // Check if Spotify is linked first - show prompt if not
+    if (!user?.spotifyLinked) {
+      setShowSpotifyPrompt(true)
+      return
+    }
+    
     const permissionStatus = await checkCameraPermission()
     
     if (permissionStatus === 'granted') {
@@ -360,11 +465,13 @@ export default function HomeAfterLogin() {
           setShowLanguageModal(true)
         }
       } else {
-        alert(result.message || 'No face detected. Please try again.')
+        // Show helpful error modal instead of alert
+        setShowFaceDetectionError(true)
       }
     } catch (error: any) {
       console.error('Emotion detection error:', error)
-      alert(error.message || 'Failed to detect emotion. Please try again.')
+      // Show helpful error modal for detection failures
+      setShowFaceDetectionError(true)
     } finally {
       setLoadingRecommendations(false)
     }
@@ -503,27 +610,8 @@ export default function HomeAfterLogin() {
       // Open JioSaavn artist URL
       window.open(artist.url, '_blank')
     } else {
-      // Search for artist's songs
-      try {
-        setSearchQuery(artistName)
-        const results = await musicAPI.search(artistName)
-        if (results && results.length > 0) {
-          setSearchResults(results)
-          setShowSearchResults(true)
-          // Scroll to search results
-          setTimeout(() => {
-            const searchSection = document.getElementById('search-results')
-            if (searchSection) {
-              searchSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
-            }
-          }, 100)
-        } else {
-          alert(`No songs found for ${artistName}`)
-        }
-      } catch (error) {
-        console.error('Error searching for artist songs:', error)
-        alert(`Could not load songs for ${artistName}`)
-      }
+      // Navigate to search results page for artist
+      router.push(`/search?q=${encodeURIComponent(artistName)}`)
     }
   }
 
@@ -564,24 +652,35 @@ export default function HomeAfterLogin() {
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Check if Spotify is linked first - show prompt if not
+    if (!user?.spotifyLinked) {
+      setShowSpotifyPrompt(true)
+      return
+    }
+    
     if (!searchQuery.trim()) {
       setShowSuggestions(false)
       return
     }
 
-    try {
-      setShowSuggestions(false)
-      const results = await musicAPI.search(searchQuery)
-      setSearchResults(results)
-      setShowSearchResults(true)
-    } catch (error: any) {
-      console.error('Search error:', error)
-      alert(error.message || 'Search failed')
-    }
+    // Hide suggestions immediately when submitting search
+    setShowSuggestions(false)
+    setSearchSuggestions([])
+    
+    // Navigate to search results page
+    router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
   }
 
   // Fetch search suggestions as user types (debounced)
   useEffect(() => {
+    // Check if Spotify is linked first - don't fetch suggestions if not linked
+    if (!user?.spotifyLinked) {
+      setSearchSuggestions([])
+      setShowSuggestions(false)
+      return
+    }
+    
     // Clear previous timeout
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current)
@@ -628,38 +727,28 @@ export default function HomeAfterLogin() {
         clearTimeout(searchTimeoutRef.current)
       }
     }
-  }, [searchQuery])
+  }, [searchQuery, user?.spotifyLinked])
 
   const handleSuggestionClick = async (e: React.MouseEvent, suggestion: Song) => {
     e.preventDefault()
     e.stopPropagation()
     
-    // Hide suggestions immediately
-    setShowSuggestions(false)
+    // Check if Spotify is linked first - show prompt if not
+    if (!user?.spotifyLinked) {
+      setShowSuggestions(false)
+      setSearchSuggestions([])
+      setShowSpotifyPrompt(true)
+      return
+    }
     
-    // Update search query and show results (don't play directly)
+    // Hide suggestions immediately and clear the array
+    setShowSuggestions(false)
+    setSearchSuggestions([])
+    
+    // Navigate to search results page
     const query = `${suggestion.title} ${suggestion.artist}`.trim()
     setSearchQuery(query)
-    
-    try {
-      setLoadingSuggestions(true)
-      const results = await musicAPI.search(query)
-      setSearchResults(results)
-      setShowSearchResults(true)
-      setLoadingSuggestions(false)
-      
-      // Scroll to search results
-      setTimeout(() => {
-        const searchSection = document.getElementById('search-results')
-        if (searchSection) {
-          searchSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
-        }
-      }, 100)
-    } catch (error: any) {
-      console.error('Search error:', error)
-      setLoadingSuggestions(false)
-      alert(error.message || 'Search failed')
-    }
+    router.push(`/search?q=${encodeURIComponent(query)}`)
   }
 
   const updateDropdownPosition = () => {
@@ -674,6 +763,12 @@ export default function HomeAfterLogin() {
   }
 
   const handleSearchInputFocus = () => {
+    // Check if Spotify is linked first - show prompt if not
+    if (!user?.spotifyLinked) {
+      setShowSpotifyPrompt(true)
+      return
+    }
+    
     if (searchSuggestions.length > 0 && searchQuery.trim()) {
       updateDropdownPosition()
       setShowSuggestions(true)
@@ -882,14 +977,43 @@ export default function HomeAfterLogin() {
             style={{ zIndex: 300, pointerEvents: 'auto' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <Image
-              src="/images/profile-icon.svg"
-              alt="Profile"
-              width={53}
-              height={53}
-              unoptimized
-              style={{ pointerEvents: 'none' }}
-            />
+            {getProfilePicture() ? (
+              <Image
+                src={getProfilePicture()}
+                alt="Profile"
+                width={53}
+                height={53}
+                className={styles.profileIconImage}
+                unoptimized
+              />
+            ) : getProfilePicture() === null || (!profileLoading && profile) ? (
+              <div
+                style={{
+                  width: '53px',
+                  height: '53px',
+                  borderRadius: '50%',
+                  background: '#ccc',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  fontSize: '20px',
+                  fontWeight: 'bold',
+                  pointerEvents: 'none'
+                }}
+              >
+                {getDisplayName().charAt(0).toUpperCase()}
+              </div>
+            ) : (
+              <Image
+                src="/images/profile-icon.svg"
+                alt="Profile"
+                width={53}
+                height={53}
+                unoptimized
+                style={{ pointerEvents: 'none' }}
+              />
+            )}
           </Link>
         </div>
       </header>
@@ -1035,99 +1159,6 @@ export default function HomeAfterLogin() {
           </div>
         )}
 
-        {/* Search Results */}
-        {showSearchResults && searchResults.length > 0 && (
-          <section id="search-results" className={styles.section}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h2 className={styles.sectionTitle}>Search Results</h2>
-              <button 
-                onClick={() => {
-                  setShowSearchResults(false)
-                  setSearchQuery('')
-                }}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#666' }}
-              >
-                Close
-              </button>
-            </div>
-            <div style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '53.64px',
-              marginLeft: '111px',
-              marginRight: '111px',
-              maxWidth: 'calc(100vw - 222px)',
-              justifyContent: 'flex-start',
-              overflowX: 'hidden'
-            }}>
-              {searchResults.map((song, index) => (
-                <div key={song.id || index} className={styles.songCard} style={{ width: '252.38px', flexShrink: 0 }}>
-                  <div 
-                    onClick={() => handleSongClick(song, searchResults)}
-                    style={{ 
-                      width: '252.38px', 
-                      height: '199px', 
-                      borderRadius: '20px',
-                      overflow: 'hidden',
-                      marginBottom: '11px',
-                      background: '#f0f0f0',
-                      position: 'relative',
-                      cursor: 'pointer',
-                      transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'scale(1.02)'
-                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'scale(1)'
-                      e.currentTarget.style.boxShadow = 'none'
-                    }}
-                  >
-                    {song.imageUrl ? (
-                      <Image
-                        src={song.imageUrl}
-                        alt={song.title}
-                        width={252}
-                        height={199}
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover',
-                          pointerEvents: 'none'
-                        }}
-                        unoptimized
-                      />
-                    ) : (
-                      <div style={{
-                        width: '100%',
-                        height: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: '#f0f0f0'
-                      }}>
-                        <Image
-                          src="/images/play-icon.png"
-                          alt="Play"
-                          width={50}
-                          height={50}
-                          unoptimized
-                          style={{ pointerEvents: 'none' }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                  <p className={styles.songInfo}>
-                    {song.title}<br />
-                    {song.artist}<br />
-                    {song.album && <span style={{ opacity: 0.8 }}>{song.album}</span>}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
 
         {/* Recommended Songs Section */}
         {loadingRecommendations ? (
@@ -1155,55 +1186,17 @@ export default function HomeAfterLogin() {
             itemWidth={252}
             itemHeight={199}
           />
-        ) : loadingFeatured ? (
-          <section className={styles.section}>
-            <h2 className={styles.sectionTitle}>Recommended Songs - Most Heard Today</h2>
-            <div style={{ padding: '2rem', textAlign: 'center', color: 'white' }}>Loading trending songs...</div>
-          </section>
         ) : (
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Recommended Songs</h2>
-          <div className={styles.featuredSongContainer}>
-            <div className={styles.featuredSongImage}>
-              <Image
-                src="/images/featured-song-home.png"
-                alt="Featured Song"
-                width={1170}
-                height={331}
-                className={styles.featuredImage}
-                unoptimized
-                priority
-              />
-              <div className={styles.playButtonOverlay}>
-                <Image
-                  src="/images/play-icon-home.svg"
-                  alt="Play"
-                  width={42}
-                  height={42}
-                  className={styles.playIcon}
-                  unoptimized
-                />
-              </div>
+          // Show empty state if no recommendations yet (no static fallback)
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>Recommended Songs</h2>
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'white' }}>
+              {detectedEmotion && !selectedLanguage 
+                ? "Please select a language to get personalized recommendations!"
+                : "Click the camera icon to detect your mood and get personalized recommendations!"
+              }
             </div>
-            <div className={styles.featuredSongInfo}>
-              <p className={styles.featuredSongText}>
-                  {detectedEmotion && !selectedLanguage 
-                    ? "Please select a language to get personalized recommendations!"
-                    : "Click the camera icon to detect your mood and get personalized recommendations!"
-                  }
-              </p>
-            </div>
-          </div>
-          <div className={styles.navArrow}>
-            <Image
-              src="/images/nav-arrow-1.png"
-              alt="Next"
-              width={70}
-              height={30}
-              unoptimized
-            />
-          </div>
-        </section>
+          </section>
         )}
 
         {/* Artist List Section */}
@@ -1225,21 +1218,21 @@ export default function HomeAfterLogin() {
           />
         )}
 
-        {/* Industry Section (Trending Songs) */}
+        {/* Industry Section */}
         {loadingFeatured ? (
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Industry</h2>
-            <div style={{ padding: '2rem', textAlign: 'center', color: 'white' }}>Loading trending songs...</div>
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'white' }}>Loading industry songs...</div>
         </section>
         ) : (
           <HorizontalCarousel
             title="Industry"
-            items={trendingSongs.map((song, index) => ({
+            items={industrySongs.map((song, index) => ({
               ...song,
               subtitle: song.subtitle || song.artist || ''
             }))}
             onItemClick={(item) => {
-              handleSongClick(item, trendingSongs)
+              handleSongClick(item, industrySongs)
             }}
             itemWidth={252}
             itemHeight={199}
@@ -1277,6 +1270,15 @@ export default function HomeAfterLogin() {
 
       {/* Footer */}
       <footer className={styles.footer}>
+        <div className={styles.footerLinks}>
+          <Link href="/about-us" className={styles.footerLink}>About Us</Link>
+          <span className={styles.footerDivider}>|</span>
+          <Link href="/privacy-policy" className={styles.footerLink}>Privacy Policy</Link>
+          <span className={styles.footerDivider}>|</span>
+          <Link href="/support" className={styles.footerLink}>Support</Link>
+          <span className={styles.footerDivider}>|</span>
+          <Link href="/terms-conditions" className={styles.footerLink}>Terms & Conditions</Link>
+        </div>
         <p className={styles.copyright}>
           Copyright © 2025 MoodTune. All Rights Reserved.
         </p>
@@ -1616,8 +1618,8 @@ export default function HomeAfterLogin() {
             <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎵</div>
             <h2 style={{ marginBottom: '1rem' }}>Link Your Spotify Account</h2>
             <p style={{ marginBottom: '1.5rem', color: '#666' }}>
-              To get personalized music recommendations based on your mood, please link your Spotify account.
-              This will give you access to millions of songs and better recommendations!
+              To use face detection and get personalized music recommendations based on your mood, please link your Spotify account.
+              This will give you access to emotion-based recommendations and millions of songs!
             </p>
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
               <button
@@ -1638,15 +1640,8 @@ export default function HomeAfterLogin() {
                 {isLinkingSpotify ? 'Linking...' : 'Link Spotify'}
               </button>
               <button
-                onClick={async () => {
+                onClick={() => {
                   setShowSpotifyPrompt(false)
-                  // If language was already selected, fetch recommendations
-                  if (selectedLanguage) {
-                    await fetchRecommendations(selectedLanguage)
-                  } else {
-                    // Otherwise, show language selection again
-                    setShowLanguageModal(true)
-                  }
                 }}
                 disabled={isLinkingSpotify}
                 style={{
@@ -1660,12 +1655,122 @@ export default function HomeAfterLogin() {
                   opacity: isLinkingSpotify ? 0.7 : 1
                 }}
               >
-                Maybe Later
+                Cancel
               </button>
             </div>
-            <p style={{ marginTop: '1rem', fontSize: '0.85rem', color: '#999' }}>
-              You can still use JioSaavn without linking, but Spotify provides better recommendations!
-            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Face Detection Error Modal */}
+      {showFaceDetectionError && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.7)',
+          zIndex: 1001,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div style={{
+            background: 'white',
+            padding: '2.5rem',
+            borderRadius: '15px',
+            maxWidth: '550px',
+            width: '90%',
+            textAlign: 'center',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
+          }}>
+            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📸</div>
+            <h2 style={{ marginBottom: '1rem', fontSize: '1.8rem', color: '#333' }}>
+              Face Not Detected
+            </h2>
+            <div style={{ 
+              background: '#fff3cd', 
+              border: '1px solid #ffc107', 
+              borderRadius: '8px', 
+              padding: '1rem', 
+              marginBottom: '1.5rem',
+              textAlign: 'left'
+            }}>
+              <p style={{ margin: 0, color: '#856404', fontSize: '1rem', fontWeight: '500', marginBottom: '0.5rem' }}>
+                <strong>Possible reasons:</strong>
+              </p>
+              <ul style={{ margin: 0, paddingLeft: '1.5rem', color: '#856404', fontSize: '0.95rem', lineHeight: '1.6' }}>
+                <li>Your face may not be fully visible in the frame</li>
+                <li>Lighting might be too bright or too dim</li>
+                <li>The camera may be too close or too far from your face</li>
+                <li>Your face might be at an angle or partially obscured</li>
+              </ul>
+            </div>
+            <div style={{ 
+              background: '#d1ecf1', 
+              border: '1px solid #bee5eb', 
+              borderRadius: '8px', 
+              padding: '1rem', 
+              marginBottom: '1.5rem',
+              textAlign: 'left'
+            }}>
+              <p style={{ margin: 0, color: '#0c5460', fontSize: '1rem', fontWeight: '500', marginBottom: '0.5rem' }}>
+                <strong>💡 Tips for better detection:</strong>
+              </p>
+              <ul style={{ margin: 0, paddingLeft: '1.5rem', color: '#0c5460', fontSize: '0.95rem', lineHeight: '1.6' }}>
+                <li>Ensure your face is well-lit (avoid direct bright light or shadows)</li>
+                <li>Position your face directly facing the camera</li>
+                <li>Move closer or farther to find the optimal distance</li>
+                <li>Remove anything covering your face (masks, hands, etc.)</li>
+                <li>Try adjusting your screen brightness or room lighting</li>
+              </ul>
+            </div>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+              <button
+                onClick={async () => {
+                  setShowFaceDetectionError(false)
+                  // Restart camera for another attempt
+                  await handleCameraIconClick()
+                }}
+                style={{
+                  padding: '1rem 2rem',
+                  fontSize: '1rem',
+                  background: '#4CAF50',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  transition: 'transform 0.2s ease',
+                  boxShadow: '0 4px 8px rgba(76, 175, 80, 0.3)'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              >
+                Try Again
+              </button>
+              <button
+                onClick={() => {
+                  setShowFaceDetectionError(false)
+                }}
+                style={{
+                  padding: '1rem 2rem',
+                  fontSize: '1rem',
+                  background: '#6c757d',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  transition: 'transform 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}

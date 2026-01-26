@@ -5,6 +5,8 @@
   overflow-x: hidden;
   background: linear-gradient(180deg, rgba(34, 114, 167, 1) 0%, rgba(13, 44, 65, 1) 100%);
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Header */
@@ -121,6 +123,14 @@
   pointer-events: auto;
 }
 
+.profileIconImage {
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 /* Main Content */
 .mainContent {
   width: 100%;
@@ -128,8 +138,9 @@
   overflow-x: hidden;
   background: linear-gradient(180deg, rgba(39, 132, 193, 1) 0%, rgba(18, 62, 91, 1) 100%);
   padding: 0;
-  min-height: calc(100vh - 104px);
   position: relative;
+  flex: 1;
+  min-height: 0;
 }
 
 .section {
@@ -367,19 +378,55 @@
 /* Footer */
 .footer {
   width: 100%;
-  padding: 40px 0;
+  min-height: 104px;
+  padding: 20px 0;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
+  gap: 15px;
+  flex-shrink: 0;
+}
+
+.footerLinks {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.footerLink {
+  font-family: 'Lusitana', serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.297em;
+  color: #FFFFFF;
+  text-decoration: none;
+  transition: opacity 0.3s ease;
+}
+
+.footerLink:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+.footerDivider {
+  font-family: 'Lusitana', serif;
+  font-weight: 400;
+  font-size: 16px;
+  color: #FFFFFF;
+  opacity: 0.6;
 }
 
 .copyright {
   font-family: 'Lusitana', serif;
   font-weight: 400;
-  font-size: 20px;
+  font-size: 18px;
   line-height: 1.297em;
   color: #FFFFFF;
   text-align: center;
+  opacity: 0.9;
 }
 
 /* Camera Access Modal */

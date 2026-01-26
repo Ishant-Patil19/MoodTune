@@ -3,10 +3,9 @@
   min-height: 100vh;
   background: linear-gradient(180deg, rgba(34, 114, 167, 1) 0%, rgba(13, 44, 65, 1) 100%);
   position: relative;
-  /* Ensure container is tall enough to show footer at y:1727 */
-  min-height: 1787px; /* From Figma: page height */
-  overflow: visible;
-  padding-bottom: 40px; /* Add padding to ensure footer is visible */
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
 }
 
 /* Header */
@@ -317,7 +316,8 @@
   margin-top: 0;
   padding-top: 0;
   overflow: visible;
-  min-height: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .settingsContainer {
@@ -385,7 +385,7 @@
   white-space: nowrap;
 }
 
-/* Notification Card - at x:66, y:228 relative to container */
+/* Feedback and Support Card - at x:66, y:228 relative to container */
 .settingCard:nth-of-type(2) {
   position: absolute;
   left: 66px; /* Relative to container left edge */
@@ -419,41 +419,7 @@
   white-space: nowrap;
 }
 
-/* Feedback and Support Card - at x:66, y:384 relative to container */
-.settingCard:nth-of-type(3) {
-  position: absolute;
-  left: 66px; /* Relative to container left edge */
-  top: 384px;
-  width: 1119px;
-  height: 67px;
-}
-
-.settingCard:nth-of-type(3) .settingItem {
-  width: 100%;
-  height: 100%;
-  background: #AEB1FB;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 44px;
-  box-sizing: border-box;
-}
-
-.settingCard:nth-of-type(3) .settingLabel {
-  font-family: 'Inter', sans-serif;
-  font-weight: 400;
-  font-size: 32px;
-  line-height: 2.09375em;
-  color: #000000;
-  width: auto;
-  height: 67px;
-  display: flex;
-  align-items: center;
-  white-space: nowrap;
-}
-
-.settingCard:nth-of-type(3) .settingLabelRight {
+.settingCard:nth-of-type(2) .settingLabelRight {
   font-family: 'Inter', sans-serif;
   font-weight: 400;
   font-size: 32px;
@@ -472,41 +438,56 @@
 /* Footer */
 .footer {
   width: 100%;
-  position: relative;
-  padding: 0;
-  margin: 0;
-  background: transparent;
-  /* Footer at y:1727 from top, settings container ends at: header(104) + settings section(10+758) + gap(69) + container height(535) = 1476px */
-  /* So margin-top = 1727 - 1476 = 251px */
-  margin-top: 251px;
-  margin-bottom: 40px;
-  min-height: 16px;
+  min-height: 104px;
+  padding: 20px 0;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  visibility: visible;
-  z-index: 10;
-  overflow: visible;
+  gap: 15px;
+  flex-shrink: 0;
+  margin-top: auto;
+}
+
+.footerLinks {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.footerLink {
+  font-family: 'Lusitana', serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.297em;
+  color: #FFFFFF;
+  text-decoration: none;
+  transition: opacity 0.3s ease;
+}
+
+.footerLink:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+.footerDivider {
+  font-family: 'Lusitana', serif;
+  font-weight: 400;
+  font-size: 16px;
+  color: #FFFFFF;
+  opacity: 0.6;
 }
 
 .copyright {
   font-family: 'Lusitana', serif;
   font-weight: 400;
-  font-size: 20px;
+  font-size: 18px;
   line-height: 1.297em;
-  text-align: center;
   color: #FFFFFF;
-  width: auto;
-  min-width: 380px;
-  height: auto;
-  margin: 0 auto;
-  padding: 0;
-  display: block;
-  visibility: visible;
-  white-space: nowrap;
-  overflow: visible;
-  opacity: 1;
-  z-index: 11;
+  text-align: center;
+  opacity: 0.9;
 }
 
 /* Toggle Switch Styles */

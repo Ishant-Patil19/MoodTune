@@ -356,6 +356,102 @@ export const featuredAPI = {
     console.log('[getArtists API] Received', data.length, 'artists');
     return data;
   },
+
+  getIndustrySongs: async (language?: string, excludeIds?: (string | number)[]) => {
+    const params = new URLSearchParams();
+    if (language) params.append('language', language);
+    if (excludeIds && excludeIds.length > 0) {
+      const cleaned = excludeIds
+        .map(String)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (cleaned.length > 0) params.append('exclude_ids', cleaned.join(','));
+    }
+    const url = params.toString()
+      ? `/api/industry-songs?${params.toString()}`
+      : '/api/industry-songs';
+    const response = await apiRequest(url);
+    if (!response.ok) {
+      throw new Error('Failed to fetch industry songs');
+    }
+    return response.json();
+  },
+};
+
+// Public APIs (no authentication required)
+export const publicAPI = {
+  getTrendingSongs: async (language?: string) => {
+    const params = new URLSearchParams();
+    if (language) params.append('language', language);
+    const url = params.toString() ? `/api/public/trending-songs?${params.toString()}` : '/api/public/trending-songs';
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Failed to fetch trending songs');
+    }
+    return response.json();
+  },
+
+  getIndustrySongs: async (language?: string, excludeIds?: (string | number)[]) => {
+    const params = new URLSearchParams();
+    if (language) params.append('language', language);
+    if (excludeIds && excludeIds.length > 0) {
+      const cleaned = excludeIds
+        .map(String)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (cleaned.length > 0) params.append('exclude_ids', cleaned.join(','));
+    }
+    const url = params.toString()
+      ? `/api/public/industry-songs?${params.toString()}`
+      : '/api/public/industry-songs';
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Failed to fetch industry songs');
+    }
+    return response.json();
+  },
+
+  getFeaturedPlaylists: async (language?: string) => {
+    const params = new URLSearchParams();
+    if (language) params.append('language', language);
+    const url = params.toString() ? `/api/public/featured-playlists?${params.toString()}` : '/api/public/featured-playlists';
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Failed to fetch featured playlists');
+    }
+    return response.json();
+  },
+
+  getArtists: async (language?: string) => {
+    const params = new URLSearchParams();
+    if (language) params.append('language', language);
+    const url = params.toString() ? `/api/public/artists?${params.toString()}` : '/api/public/artists';
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Failed to fetch artists');
+    }
+    return response.json();
+  },
 };
 
 // Settings APIs

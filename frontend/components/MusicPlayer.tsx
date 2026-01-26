@@ -33,15 +33,12 @@ export default function MusicPlayer({
   onPrevious,
   queue = []
 }: MusicPlayerProps) {
-  const [isPlaying, setIsPlaying] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
-  const [progress, setProgress] = useState(0)
   const playerRef = useRef<HTMLDivElement>(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
-  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   // Initialize position on mount
   useEffect(() => {
@@ -79,32 +76,7 @@ export default function MusicPlayer({
 
   // Handle song changes
   useEffect(() => {
-    if (song) {
-      setIsPlaying(true)
-      setProgress(0)
-      // Reset progress tracking
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current)
-      }
-      // Simulate progress (in real implementation, this would come from the player)
-      progressIntervalRef.current = setInterval(() => {
-        setProgress(prev => {
-          if (prev >= 100) {
-            if (progressIntervalRef.current) {
-              clearInterval(progressIntervalRef.current)
-            }
-            return 100
-          }
-          return prev + 0.5
-        })
-      }, 1000)
-    }
-
-    return () => {
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current)
-      }
-    }
+    // Song change logic can be added here if needed
   }, [song])
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -261,42 +233,6 @@ export default function MusicPlayer({
             )}
           </div>
 
-          {/* Progress Bar */}
-          <div className={styles.progressContainer}>
-            <div className={styles.progressBar}>
-              <div
-                className={styles.progressFill}
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Player Controls */}
-          <div className={styles.playerControls}>
-            <button
-              onClick={onPrevious}
-              className={styles.controlButton}
-              disabled={!onPrevious}
-              aria-label="Previous"
-            >
-              ⏮
-            </button>
-            <button
-              onClick={togglePlayPause}
-              className={styles.playButton}
-              aria-label={isPlaying ? 'Pause' : 'Play'}
-            >
-              {isPlaying ? '⏸' : '▶'}
-            </button>
-            <button
-              onClick={onNext}
-              className={styles.controlButton}
-              disabled={!onNext}
-              aria-label="Next"
-            >
-              ⏭
-            </button>
-          </div>
         </>
       )}
     </div>

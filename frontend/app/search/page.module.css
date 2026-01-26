@@ -1,0 +1,375 @@
+.container {
+  width: 100%;
+  min-height: 100vh;
+  max-width: 100vw;
+  overflow-x: hidden;
+  background: linear-gradient(180deg, rgba(34, 114, 167, 1) 0%, rgba(13, 44, 65, 1) 100%);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  isolation: isolate;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  color: white;
+  font-size: 1.5rem;
+}
+
+/* Header */
+.header {
+  width: 100%;
+  max-width: 100vw;
+  height: 104px;
+  overflow-x: hidden;
+  background: linear-gradient(180deg, rgba(39, 132, 193, 1) 0%, rgba(18, 62, 91, 1) 100%);
+  position: relative;
+  z-index: 100;
+}
+
+.headerContent {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0;
+  height: 100%;
+  position: relative;
+  width: 100%;
+  z-index: 100;
+}
+
+.logoContainer {
+  width: 77px;
+  height: 77px;
+  position: absolute;
+  left: 62px;
+  top: 14px;
+  text-decoration: none;
+  display: block;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.logo {
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.searchContainer {
+  position: absolute;
+  left: 468px;
+  top: 25px;
+  z-index: 200;
+}
+
+.searchBar {
+  width: 481.26px;
+  height: 53px;
+  background: linear-gradient(90deg, rgba(45, 68, 78, 1) 0%, rgba(104, 157, 180, 1) 100%);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  padding: 0 24.68px;
+  gap: 24.68px;
+  position: relative;
+}
+
+.searchIcon {
+  width: 50.62px;
+  height: 30px;
+  object-fit: contain;
+}
+
+.searchText {
+  font-family: 'Myanmar Khyay', sans-serif;
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.347em;
+  color: #FFFFFF;
+  border: none;
+  background: transparent;
+  outline: none;
+  flex: 1;
+}
+
+.settingsIcon {
+  position: absolute;
+  left: 1141px;
+  top: 19px;
+  width: 65px;
+  height: 65px;
+  cursor: pointer;
+  text-decoration: none;
+  display: block;
+  z-index: 10;
+}
+
+.settingsIconImage {
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+}
+
+.profileIcon {
+  position: absolute;
+  left: 1256px;
+  top: 25px;
+  width: 53px;
+  height: 53px;
+  cursor: pointer;
+  text-decoration: none;
+  display: block;
+  z-index: 300;
+  pointer-events: auto;
+}
+
+.profileIconImage {
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Main Content */
+.mainContent {
+  flex: 1;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  padding: 40px 20px;
+}
+
+.contentWrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: white;
+  gap: 20px;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Results Container */
+.resultsContainer {
+  width: 100%;
+}
+
+.resultsTitle {
+  font-size: 24px;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 8px;
+}
+
+.resultsCount {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 30px;
+}
+
+.resultsList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+/* Result Item - Vertical YouTube-like Layout */
+.resultItem {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.resultItem:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateX(4px);
+}
+
+.resultImageContainer {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.resultImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.resultImagePlaceholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.playOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.resultItem:hover .playOverlay {
+  opacity: 1;
+}
+
+.resultInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.resultTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: white;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resultArtist {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resultAlbum {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* No Results / Empty State */
+.noResults,
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: white;
+  text-align: center;
+  gap: 20px;
+}
+
+.noResultsIcon,
+.emptyStateIcon {
+  font-size: 64px;
+  margin-bottom: 10px;
+}
+
+.noResults h2,
+.emptyState h2 {
+  font-size: 28px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.noResults p,
+.emptyState p {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+}
+
+/* Suggestions Dropdown */
+.suggestionsDropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  margin-top: 4px;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .headerContent {
+    padding: 0 20px;
+  }
+
+  .searchContainer {
+    margin: 0 20px;
+  }
+
+  .resultItem {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .resultImageContainer {
+    width: 100%;
+    height: 200px;
+  }
+
+  .resultTitle {
+    font-size: 16px;
+  }
+
+  .resultArtist {
+    font-size: 14px;
+  }
+}

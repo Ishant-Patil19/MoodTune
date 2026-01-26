@@ -3,17 +3,31 @@ from flask import current_app
 from base64 import b64encode
 
 def get_spotify_token():
-    client_id = current_app.config['SPOTIFY_CLIENT_ID']
-    client_secret = current_app.config['SPOTIFY_CLIENT_SECRET']
-    auth_str = f"{client_id}:{client_secret}"
-    b64_auth_str = b64encode(auth_str.encode()).decode()
+    try:
+        client_id = current_app.config.get('SPOTIFY_CLIENT_ID')
+        client_secret = current_app.config.get('SPOTIFY_CLIENT_SECRET')
+        
+        if not client_id or not client_secret:
+            print("⚠️ Spotify credentials not configured")
+            return None
+        
+        auth_str = f"{client_id}:{client_secret}"
+        b64_auth_str = b64encode(auth_str.encode()).decode()
 
-    res = requests.post(
-        "https://accounts.spotify.com/api/token",
-        data={"grant_type": "client_credentials"},
-        headers={"Authorization": f"Basic {b64_auth_str}"}
-    )
-    return res.json().get("access_token")
+        res = requests.post(
+            "https://accounts.spotify.com/api/token",
+            data={"grant_type": "client_credentials"},
+            headers={"Authorization": f"Basic {b64_auth_str}"}
+        )
+        
+        if res.status_code == 200:
+            return res.json().get("access_token")
+        else:
+            print(f"⚠️ Failed to get Spotify token: {res.status_code} - {res.text}")
+            return None
+    except Exception as e:
+        print(f"⚠️ Error getting Spotify token: {str(e)}")
+        return None
 
 
 def get_playlist_for_emotion(emotion):

@@ -1,15 +1,63 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import Image from 'next/image'
 import Link from 'next/link'
+import { publicAPI } from '@/lib/api'
+import HorizontalCarousel from '@/components/HorizontalCarousel'
 import styles from './page.module.css'
+
+interface Song {
+  id: string
+  title: string
+  subtitle?: string
+  artist?: string
+  album?: string
+  imageUrl?: string
+  spotifyId?: string
+  spotifyUri?: string
+  spotifyUrl?: string
+  url?: string
+  source?: string
+}
+
+interface Playlist {
+  id: string
+  title: string
+  subtitle?: string
+  imageUrl?: string
+  spotifyId?: string
+  url?: string
+  genre?: string
+}
+
+interface Artist {
+  id: string
+  title: string
+  subtitle?: string
+  imageUrl?: string
+  spotifyId?: string
+}
+
+// Helper function to truncate long text
+const truncateText = (text: string, maxLength: number = 30): string => {
+  if (!text) return ''
+  if (text.length <= maxLength) return text
+  return text.substring(0, maxLength).trim() + '...'
+}
 
 export default function Home() {
   const router = useRouter()
   const { isAuthenticated, loading: authLoading } = useAuth()
+  const [trendingSongs, setTrendingSongs] = useState<Song[]>([])
+  const [industrySongs, setIndustrySongs] = useState<Song[]>([])
+  const [featuredPlaylists, setFeaturedPlaylists] = useState<Playlist[]>([])
+  const [artists, setArtists] = useState<Artist[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false)
+  const [selectedSong, setSelectedSong] = useState<Song | null>(null)
 
   useEffect(() => {
     // Check for Spotify callback code in URL
@@ -35,8 +83,99 @@ export default function Home() {
     // If authenticated and no callback, redirect to home
     if (isAuthenticated && !authLoading) {
       router.push('/home')
+      return
+    }
+
+    // Fetch public content only if not authenticated
+    if (!isAuthenticated && !authLoading) {
+      fetchPublicContent()
     }
   }, [isAuthenticated, authLoading, router])
+
+  const fetchPublicContent = async () => {
+    try {
+      setLoading(true)
+      // Use 'Global' for more diverse content, or rotate between languages
+      const languages = ['English', 'Global', 'Hindi']
+      const language = languages[Math.floor(Math.random() * languages.length)]
+      
+      // Fetch trending songs first
+      const songs = await publicAPI.getTrendingSongs(language).catch((e) => {
+        console.error('Error fetching trending songs:', e)
+        return []
+      })
+      
+      // Extract IDs from trending songs to exclude from industry songs
+      const trendingSongIds = songs
+        .slice(0, 10)
+        .map(song => song.id || song.spotifyId || song.spotifyUri || song.url)
+        .filter(id => id && !id.toString().startsWith('default-'))
+      
+      // Fetch other content in parallel, but industry songs with exclude parameter
+      const [industrySongsData, playlists, artistsData] = await Promise.all([
+        publicAPI.getIndustrySongs(language, trendingSongIds).catch((e) => {
+          console.error('Error fetching industry songs:', e)
+          return []
+        }),
+        publicAPI.getFeaturedPlaylists(language).catch((e) => {
+          console.error('Error fetching featured playlists:', e)
+          return []
+        }),
+        publicAPI.getArtists(language).catch((e) => {
+          console.error('Error fetching artists:', e)
+          return []
+        })
+      ])
+      
+      console.log('Fetched public content:', {
+        songs: songs.length,
+        industrySongs: industrySongsData.length,
+        playlists: playlists.length,
+        artists: artistsData.length,
+        language,
+        excludedIds: trendingSongIds.length
+      })
+      
+      // Limit to 10 items per section (2 for playlists) for faster loading
+      // Don't shuffle - keep in popularity order from backend
+      setTrendingSongs(songs.slice(0, 10)) // Limit to 10 most popular songs
+      setIndustrySongs(industrySongsData.slice(0, 10)) // Limit to 10 industry songs (different from trending)
+      setFeaturedPlaylists(playlists.slice(0, 2)) // Limit to 2 most popular playlists
+      setArtists(artistsData.slice(0, 10)) // Limit to 10 most popular artists
+    } catch (error) {
+      console.error('Error fetching public content:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSongClick = (song: Song) => {
+    if (!isAuthenticated) {
+      setSelectedSong(song)
+      setShowLoginPrompt(true)
+    } else {
+      // If authenticated, redirect to home page (which has full functionality)
+      router.push('/home')
+    }
+  }
+
+  const handlePlaylistClick = (playlist: Playlist) => {
+    if (!isAuthenticated) {
+      setSelectedSong(null)
+      setShowLoginPrompt(true)
+    } else {
+      router.push('/home')
+    }
+  }
+
+  const handleArtistClick = (artist: Artist) => {
+    if (!isAuthenticated) {
+      setSelectedSong(null)
+      setShowLoginPrompt(true)
+    } else {
+      router.push('/home')
+    }
+  }
 
   return (
     <div className={styles.container}>
@@ -69,7 +208,24 @@ export default function Home() {
             </div>
           </div>
           
-          <div className={styles.cameraIcon}>
+          <div
+            className={styles.cameraIcon}
+            role="button"
+            tabIndex={0}
+            onClick={() => {
+              setSelectedSong(null)
+              setShowLoginPrompt(true)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                setSelectedSong(null)
+                setShowLoginPrompt(true)
+              }
+            }}
+            style={{ cursor: 'pointer' }}
+            aria-label="Detect emotion (login required)"
+          >
             <Image
               src="/images/camera-icon.png"
               alt="Camera"
@@ -91,252 +247,130 @@ export default function Home() {
       {/* Main Content */}
       <main className={styles.mainContent}>
         {/* Recommended Songs Section */}
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Recommended Songs</h2>
-          <div className={styles.featuredSongContainer}>
-            <div className={styles.featuredSongImage}>
-              <Image
-                src="/images/featured-song.png"
-                alt="Featured Song"
-                width={1170}
-                height={331}
-                className={styles.featuredImage}
-                unoptimized
-                priority
-              />
-              <div className={styles.playButtonOverlay}>
-                <Image
-                  src="/images/play-icon.png"
-                  alt="Play"
-                  width={42}
-                  height={42}
-                  className={styles.playIcon}
-                  unoptimized
-                />
-              </div>
+        {loading ? (
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>Recommended Songs - Most Heard Today</h2>
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'white' }}>
+              Loading songs...
             </div>
-            <div className={styles.featuredSongInfo}>
-              <p className={styles.featuredSongText}>
-                Song: Dance Basanti<br />
-                Singer: Arijjit Singh<br />
-                Movie: Ungli
-              </p>
+          </section>
+        ) : trendingSongs.length > 0 ? (
+          <HorizontalCarousel
+            title="Recommended Songs - Most Heard Today"
+            items={trendingSongs.map((song, index) => ({
+              id: song.id || song.spotifyUri || song.url || `song-${index}`,
+              title: song.title,
+              subtitle: song.subtitle || song.artist || 'Unknown Artist',
+              imageUrl: song.imageUrl || null,
+              ...song
+            }))}
+            onItemClick={(item) => {
+              handleSongClick(item as Song)
+            }}
+            itemWidth={252}
+            itemHeight={199}
+          />
+        ) : (
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>Recommended Songs - Most Heard Today</h2>
+            <div style={{ padding: '1.5rem', color: 'white', opacity: 0.9 }}>
+              No recommendations available right now. Please try again in a moment.
             </div>
-          </div>
-          <div className={styles.navArrow}>
-            <Image
-              src="/images/nav-arrow-1.png"
-              alt="Next"
-              width={70}
-              height={30}
-              unoptimized
-            />
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* Artist List Section */}
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Artist List</h2>
-          <div className={styles.artistList}>
-            <div className={styles.artistCard}>
-              <div className={styles.artistImage}>
-                <Image
-                  src="/images/artist-arijit-circle.png"
-                  alt="Arijit Singh"
-                  width={226}
-                  height={217}
-                  className={styles.artistImg}
-                  unoptimized
-                />
-              </div>
-              <p className={styles.artistName}>Arijit Singh</p>
+        {loading ? (
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>Artist List</h2>
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'white' }}>
+              Loading artists...
             </div>
-            <div className={styles.artistCard}>
-              <div className={styles.artistImage}>
-                <Image
-                  src="/images/artist-sonu-circle.png"
-                  alt="Sonu Nigam"
-                  width={226}
-                  height={217}
-                  className={styles.artistImg}
-                  unoptimized
-                />
-              </div>
-              <p className={styles.artistName}>Sonu Nigam</p>
+          </section>
+        ) : artists.length > 0 ? (
+          <HorizontalCarousel
+            title="Artist List"
+            items={artists.map((artist) => ({
+              ...artist,
+              imageUrl: artist.imageUrl || null
+            }))}
+            onItemClick={(item) => {
+              handleArtistClick(item as Artist)
+            }}
+            itemWidth={226}
+            itemHeight={217}
+            circularImages={true}
+          />
+        ) : (
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>Artist List</h2>
+            <div style={{ padding: '1.5rem', color: 'white', opacity: 0.9 }}>
+              No artists available right now. Please try again in a moment.
             </div>
-            <div className={styles.artistCard}>
-              <div className={styles.artistImage}>
-                <Image
-                  src="/images/artist-shreya-circle.png"
-                  alt="Shreya Ghoshal"
-                  width={226}
-                  height={217}
-                  className={styles.artistImg}
-                  unoptimized
-                />
-              </div>
-              <p className={styles.artistName}>Shreya Ghoshal</p>
-            </div>
-            <div className={styles.artistCard}>
-              <div className={styles.artistImage}>
-                <Image
-                  src="/images/artist-atif-circle.png"
-                  alt="Atif Aslam"
-                  width={226}
-                  height={217}
-                  className={styles.artistImg}
-                  unoptimized
-                />
-              </div>
-              <p className={styles.artistName}>Atif Aslam</p>
-            </div>
-          </div>
-          <div className={styles.navArrow}>
-            <Image
-              src="/images/nav-arrow-2.png"
-              alt="Next"
-              width={70}
-              height={30}
-              unoptimized
-            />
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* Industry Section */}
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Industry</h2>
-          <div className={styles.songGrid}>
-            <div className={styles.songCard}>
-              <Image
-                src="/images/song-1.png"
-                alt="Song 1"
-                width={252}
-                height={199}
-                className={styles.songImage}
-                unoptimized
-              />
-              <p className={styles.songInfo}>
-                Song: Blue Eyes<br />
-                Singer: Honey Singh<br />
-                Album Song
-              </p>
+        {loading ? (
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>Industry</h2>
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'white' }}>
+              Loading industry songs...
             </div>
-            <div className={styles.songCard}>
-              <Image
-                src="/images/song-2.png"
-                alt="Song 2"
-                width={252}
-                height={199}
-                className={styles.songImage}
-                unoptimized
-              />
-              <p className={styles.songInfo}>
-                Song: Photograph<br />
-                Singer: Ed Sheeran<br />
-                Album Song
-              </p>
+          </section>
+        ) : industrySongs.length > 0 ? (
+          <HorizontalCarousel
+            title="Industry"
+            items={industrySongs.map((song, index) => ({
+              ...song,
+              id: song.id || song.spotifyUri || song.url || `industry-song-${index}`,
+              subtitle: song.subtitle || song.artist || 'Unknown Artist',
+              imageUrl: song.imageUrl || null
+            }))}
+            onItemClick={(item) => {
+              handleSongClick(item as Song)
+            }}
+            itemWidth={252}
+            itemHeight={199}
+          />
+        ) : (
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>Industry</h2>
+            <div style={{ padding: '1.5rem', color: 'white', opacity: 0.9 }}>
+              No industry songs available right now. Please try again in a moment.
             </div>
-            <div className={styles.songCard}>
-              <Image
-                src="/images/song-3.png"
-                alt="Song 3"
-                width={252}
-                height={199}
-                className={styles.songImage}
-                unoptimized
-              />
-              <p className={styles.songInfo}>
-                Song: Dil Jhoom<br />
-                Singer: Arijjit Singh<br />
-                Movie: Gadar 2
-              </p>
-            </div>
-            <div className={styles.songCard}>
-              <Image
-                src="/images/song-4.png"
-                alt="Song 4"
-                width={252}
-                height={199}
-                className={styles.songImage}
-                unoptimized
-              />
-              <p className={styles.songInfo}>
-                Song: APT<br />
-                Singer: Rose & Bruno Mars<br />
-                Album Song
-              </p>
-            </div>
-          </div>
-          <div className={styles.navArrow}>
-            <Image
-              src="/images/nav-arrow-3.png"
-              alt="Next"
-              width={70}
-              height={30}
-              unoptimized
-            />
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* Playlists Section */}
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Playlists</h2>
-          <div className={styles.playlistGrid}>
-            <div className={styles.playlistCard}>
-              <Image
-                src="/images/playlist-1.png"
-                alt="India's hit"
-                width={252}
-                height={202}
-                className={styles.playlistImage}
-                unoptimized
-              />
-              <p className={styles.playlistName}>India's hit</p>
+        {loading ? (
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>Playlists</h2>
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'white' }}>
+              Loading playlists...
             </div>
-            <div className={styles.playlistCard}>
-              <Image
-                src="/images/playlist-2.png"
-                alt="International Hiits"
-                width={252}
-                height={202}
-                className={styles.playlistImage}
-                unoptimized
-              />
-              <p className={styles.playlistName}>International Hiits</p>
+          </section>
+        ) : featuredPlaylists.length > 0 ? (
+          <HorizontalCarousel
+            title="Playlists"
+            items={featuredPlaylists.map((playlist, index) => ({
+              ...playlist,
+              imageUrl: playlist.imageUrl || null
+            }))}
+            onItemClick={(item) => {
+              handlePlaylistClick(item as Playlist)
+            }}
+            itemWidth={252}
+            itemHeight={202}
+          />
+        ) : (
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>Playlists</h2>
+            <div style={{ padding: '1.5rem', color: 'white', opacity: 0.9 }}>
+              No playlists available right now. Please try again in a moment.
             </div>
-            <div className={styles.playlistCard}>
-              <Image
-                src="/images/playlist-3.png"
-                alt="Divine Journey"
-                width={253}
-                height={202}
-                className={styles.playlistImage}
-                unoptimized
-              />
-              <p className={styles.playlistName}>Divine Journey</p>
-            </div>
-            <div className={styles.playlistCard}>
-              <Image
-                src="/images/playlist-4.png"
-                alt="Romantic Hits"
-                width={254}
-                height={202}
-                className={styles.playlistImage}
-                unoptimized
-              />
-              <p className={styles.playlistName}>Romantic Hits</p>
-            </div>
-          </div>
-          <div className={styles.navArrow}>
-            <Image
-              src="/images/nav-arrow-4.png"
-              alt="Next"
-              width={70}
-              height={30}
-              unoptimized
-            />
-          </div>
-        </section>
+          </section>
+        )}
       </main>
 
       {/* Footer */}
@@ -345,6 +379,113 @@ export default function Home() {
           Copyright © 2025 MoodTune. All Rights Reserved.
         </p>
       </footer>
+
+      {/* Login Prompt Modal */}
+      {showLoginPrompt && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.7)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div style={{
+            background: 'white',
+            padding: '2.5rem',
+            borderRadius: '15px',
+            maxWidth: '500px',
+            width: '90%',
+            textAlign: 'center',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
+          }}>
+            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎵</div>
+            <h2 style={{ marginBottom: '1rem', fontSize: '1.8rem', color: '#333' }}>
+              Login to Play Music
+            </h2>
+            {selectedSong && (
+              <p style={{ marginBottom: '1rem', color: '#666', fontSize: '1rem' }}>
+                You're trying to play: <strong>{truncateText(selectedSong.title, 40)}</strong> by {truncateText(selectedSong.artist || selectedSong.subtitle || 'Unknown Artist', 30)}
+              </p>
+            )}
+            <p style={{ marginBottom: '2rem', color: '#666', fontSize: '1rem' }}>
+              {selectedSong 
+                ? 'Please login or sign up to listen to this song and get personalized music recommendations!'
+                : 'Want to detect emotion? Please login or sign up.'
+              }
+            </p>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+              <Link
+                href="/login"
+                onClick={() => setShowLoginPrompt(false)}
+                style={{
+                  padding: '1rem 2rem',
+                  fontSize: '1rem',
+                  background: '#4CAF50',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  textDecoration: 'none',
+                  display: 'inline-block',
+                  transition: 'transform 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              >
+                Login
+              </Link>
+              <Link
+                href="/signup"
+                onClick={() => setShowLoginPrompt(false)}
+                style={{
+                  padding: '1rem 2rem',
+                  fontSize: '1rem',
+                  background: '#2196F3',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  textDecoration: 'none',
+                  display: 'inline-block',
+                  transition: 'transform 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              >
+                Sign Up
+              </Link>
+              <button
+                onClick={() => {
+                  setShowLoginPrompt(false)
+                  setSelectedSong(null)
+                }}
+                style={{
+                  padding: '1rem 2rem',
+                  fontSize: '1rem',
+                  background: '#f44336',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  transition: 'transform 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

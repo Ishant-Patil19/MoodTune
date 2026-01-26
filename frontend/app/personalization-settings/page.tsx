@@ -4,16 +4,15 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { authAPI, settingsAPI } from '@/lib/api'
 import styles from './page.module.css'
 
 export default function PersonalizationSettings() {
   const { user, refreshUser, isAuthenticated, loading: authLoading } = useAuth()
   const router = useRouter()
-  const [theme, setTheme] = useState('light')
+  const pathname = usePathname()
   const [language, setLanguage] = useState('English')
-  const [showThemeDropdown, setShowThemeDropdown] = useState(false)
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false)
   const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [currentPassword, setCurrentPassword] = useState('')
@@ -22,8 +21,8 @@ export default function PersonalizationSettings() {
   const [passwordError, setPasswordError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [profile, setProfile] = useState<any>(null)
+  const [profileLoading, setProfileLoading] = useState(true)
 
-  const themes = ['Light', 'Dark']
   const languages = ['Hindi', 'English', 'Bengali', 'Marathi', 'Telugu', 'Tamil', 'Global']
 
   useEffect(() => {
@@ -43,13 +42,19 @@ export default function PersonalizationSettings() {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && user) {
-        fetchProfile()
+        // Add delay to ensure backend has processed the update
+        setTimeout(() => {
+          fetchProfile()
+        }, 500)
       }
     }
 
     const handleFocus = () => {
       if (user) {
-        fetchProfile()
+        // Add delay to ensure backend has processed the update
+        setTimeout(() => {
+          fetchProfile()
+        }, 500)
       }
     }
 
@@ -62,30 +67,39 @@ export default function PersonalizationSettings() {
     }
   }, [user])
 
+  // Refetch profile when pathname changes (e.g., returning from edit-profile)
+  useEffect(() => {
+    if (pathname === '/personalization-settings' && user) {
+      // Small delay to ensure navigation is complete
+      const timer = setTimeout(() => {
+        fetchProfile()
+      }, 300)
+      return () => clearTimeout(timer)
+    }
+  }, [pathname, user])
+
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement
-      // Check if click is outside both dropdowns
+      // Check if click is outside dropdown
       if (!target.closest(`.${styles.settingValue}`)) {
-        setShowThemeDropdown(false)
         setShowLanguageDropdown(false)
       }
     }
 
-    if (showThemeDropdown || showLanguageDropdown) {
+    if (showLanguageDropdown) {
       document.addEventListener('mousedown', handleClickOutside)
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [showThemeDropdown, showLanguageDropdown])
+  }, [showLanguageDropdown])
 
   const fetchPreferences = async () => {
     try {
       const prefs = await settingsAPI.getPreferences()
-      setTheme(prefs.theme || 'light')
       setLanguage(prefs.language || 'English')
     } catch (error) {
       console.error('Failed to fetch preferences:', error)
@@ -94,29 +108,13 @@ export default function PersonalizationSettings() {
 
   const fetchProfile = async () => {
     try {
+      setProfileLoading(true)
       const profileData = await authAPI.getProfile()
       setProfile(profileData)
     } catch (error) {
       console.error('Failed to fetch profile:', error)
-    }
-  }
-
-  const handleThemeChange = async (newTheme: string) => {
-    const themeValue = newTheme.toLowerCase()
-    setTheme(newTheme)
-    setShowThemeDropdown(false)
-    try {
-      await settingsAPI.updatePreferences({ theme: themeValue })
-      // Apply theme to document
-      if (typeof document !== 'undefined') {
-        document.documentElement.setAttribute('data-theme', themeValue)
-      }
-    } catch (error: any) {
-      console.error('Failed to update theme:', error)
-      alert(error.message || 'Failed to update theme')
-      // Revert on error
-      const prefs = await settingsAPI.getPreferences()
-      setTheme(prefs.theme === 'dark' ? 'Dark' : 'Light')
+    } finally {
+      setProfileLoading(false)
     }
   }
 
@@ -169,6 +167,8 @@ export default function PersonalizationSettings() {
   }
 
   const getDisplayName = () => {
+    // Don't show fallback while loading - wait for profile data
+    if (profileLoading) return undefined
     if (profile?.first_name) return profile.first_name
     if (profile?.username) return profile.username
     if (user?.email) return user.email.split('@')[0]
@@ -176,13 +176,21 @@ export default function PersonalizationSettings() {
   }
 
   const getUsername = () => {
+    // Don't show fallback while loading - wait for profile data
+    if (profileLoading) return undefined
     if (profile?.username) return `@${profile.username}`
     if (user?.email) return `@${user.email.split('@')[0]}`
     return '@user'
   }
 
   const getProfilePicture = () => {
+    // Don't show fallback while loading - wait for profile data
+    if (profileLoading) return undefined
     if (profile?.profile_picture_url) return profile.profile_picture_url
+    // No static fallback - return null or empty string when Spotify is linked
+    if (user?.spotifyLinked) {
+      return null
+    }
     return '/images/profile-emily.png'
   }
 
@@ -253,14 +261,33 @@ export default function PersonalizationSettings() {
           </Link>
           
           <Link href="/edit-profile" className={styles.profileIcon}>
-            <Image
-              src={getProfilePicture()}
-              alt="Profile"
-              width={53}
-              height={53}
-              className={styles.profileIconImage}
-              unoptimized
-            />
+            {getProfilePicture() ? (
+              <Image
+                src={getProfilePicture()}
+                alt="Profile"
+                width={53}
+                height={53}
+                className={styles.profileIconImage}
+                unoptimized
+              />
+            ) : getProfilePicture() === null || (!profileLoading && profile) ? (
+              <div
+                style={{
+                  width: '53px',
+                  height: '53px',
+                  borderRadius: '50%',
+                  background: '#ccc',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  fontSize: '20px',
+                  fontWeight: 'bold'
+                }}
+              >
+                {getDisplayName().charAt(0).toUpperCase()}
+              </div>
+            ) : null}
           </Link>
         </div>
       </header>
@@ -272,19 +299,56 @@ export default function PersonalizationSettings() {
           
           <div className={styles.profileSection}>
             <div className={styles.profileImageContainer}>
-              <Image
-                src={getProfilePicture()}
-                alt={getDisplayName()}
-                width={331}
-                height={332}
-                className={styles.profileImage}
-                unoptimized
-              />
+              {getProfilePicture() ? (
+                <Image
+                  src={getProfilePicture()}
+                  alt={getDisplayName()}
+                  width={331}
+                  height={332}
+                  className={styles.profileImage}
+                  unoptimized
+                />
+              ) : getProfilePicture() === null || (!profileLoading && profile) ? (
+                <div
+                  style={{
+                    width: '331px',
+                    height: '332px',
+                    borderRadius: '20px',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontSize: '80px',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  {getDisplayName().charAt(0).toUpperCase()}
+                </div>
+              ) : (
+                <div
+                  style={{
+                    width: '331px',
+                    height: '332px',
+                    borderRadius: '20px',
+                    background: '#f0f0f0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  {/* Show loading placeholder instead of initials while loading */}
+                </div>
+              )}
             </div>
             
             <div className={styles.profileInfo}>
-              <h2 className={styles.profileName}>{getDisplayName()}</h2>
-              <p className={styles.profileUsername}>{getUsername()}</p>
+              <h2 className={styles.profileName}>
+                {getDisplayName() !== undefined ? getDisplayName() : ''}
+              </h2>
+              <p className={styles.profileUsername}>
+                {getUsername() !== undefined ? getUsername() : ''}
+              </p>
               <p className={styles.profileBio}>
                 {getBio()}
               </p>
@@ -316,45 +380,6 @@ export default function PersonalizationSettings() {
       {/* Main Content */}
       <main className={styles.mainContent}>
         <div className={styles.settingsContainer}>
-          {/* Theme Card */}
-          <div className={`${styles.settingCard} ${showThemeDropdown ? styles.dropdownOpen : ''}`}>
-            <div className={styles.settingItem}>
-              <span className={styles.settingLabel}>Theme</span>
-              <div 
-                className={styles.settingValue}
-                style={{ position: 'relative' }}
-              >
-                <span className={styles.settingText}>{theme}</span>
-                <Image
-                  src="/images/arrow-dropdown.svg"
-                  alt="Dropdown"
-                  width={58}
-                  height={58}
-                  className={styles.dropdownIcon}
-                  unoptimized
-                  onClick={() => {
-                    setShowThemeDropdown(!showThemeDropdown)
-                    setShowLanguageDropdown(false)
-                  }}
-                  style={{ cursor: 'pointer' }}
-                />
-                {showThemeDropdown && (
-                  <div className={styles.dropdownMenu}>
-                    {themes.map((t) => (
-                      <div
-                        key={t}
-                        className={styles.dropdownItem}
-                        onClick={() => handleThemeChange(t)}
-                      >
-                        {t}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
           {/* Language Card */}
           <div className={`${styles.settingCard} ${showLanguageDropdown ? styles.dropdownOpen : ''}`}>
             <div className={styles.settingItem}>
@@ -373,7 +398,6 @@ export default function PersonalizationSettings() {
                   unoptimized
                   onClick={() => {
                     setShowLanguageDropdown(!showLanguageDropdown)
-                    setShowThemeDropdown(false)
                   }}
                   style={{ cursor: 'pointer' }}
                 />
@@ -411,8 +435,17 @@ export default function PersonalizationSettings() {
 
       {/* Footer */}
       <footer className={styles.footer}>
+        <div className={styles.footerLinks}>
+          <Link href="/about-us" className={styles.footerLink}>About Us</Link>
+          <span className={styles.footerDivider}>|</span>
+          <Link href="/privacy-policy" className={styles.footerLink}>Privacy Policy</Link>
+          <span className={styles.footerDivider}>|</span>
+          <Link href="/support" className={styles.footerLink}>Support</Link>
+          <span className={styles.footerDivider}>|</span>
+          <Link href="/terms-conditions" className={styles.footerLink}>Terms & Conditions</Link>
+        </div>
         <p className={styles.copyright}>
-          Copyright © 2025 MoodTune - Your emotional Uplift. All Rights Reserved.
+          Copyright © 2025 MoodTune. All Rights Reserved.
         </p>
       </footer>
 

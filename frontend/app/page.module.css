@@ -3,6 +3,8 @@
   min-height: 100vh;
   background: linear-gradient(180deg, rgba(34, 114, 167, 1) 0%, rgba(13, 44, 65, 1) 100%);
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Header */
@@ -127,8 +129,9 @@
   width: 100%;
   background: linear-gradient(180deg, rgba(39, 132, 193, 1) 0%, rgba(18, 62, 91, 1) 100%);
   padding: 0;
-  min-height: calc(100vh - 104px);
   position: relative;
+  flex: 1;
+  min-height: 0;
 }
 
 .section {
@@ -364,10 +367,12 @@
 /* Footer */
 .footer {
   width: 100%;
-  padding: 40px 0;
+  height: 104px;
+  padding: 0;
   display: flex;
   justify-content: center;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .copyright {
