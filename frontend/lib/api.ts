@@ -529,5 +529,16 @@ export const settingsAPI = {
     }
     return response.json();
   },
+
+  unlinkGoogle: async () => {
+    const response = await apiRequest('/api/settings/google/unlink', {
+      method: 'DELETE',
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to unlink Google');
+    }
+    return response.json();
+  },
 };
 

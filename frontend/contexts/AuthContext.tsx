@@ -12,6 +12,12 @@ interface User {
     name: string
     email: string
   }
+  googleLinked?: boolean
+  googleUser?: {
+    id: string
+    name: string
+    email: string
+  }
 }
 
 interface AuthContextType {

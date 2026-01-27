@@ -93,7 +93,13 @@ def get_me():
             "id": user.spotify_id,
             "name": user.spotify_display_name,
             "email": user.spotify_email
-        } if user.spotify_access_token else None
+        } if user.spotify_access_token else None,
+        "googleLinked": bool(user.google_id),
+        "googleUser": {
+            "id": user.google_id,
+            "name": user.google_name,
+            "email": user.google_email
+        } if user.google_id else None
     }), 200
 
 
@@ -291,6 +297,9 @@ def google_callback():
             # Check if a user with this email exists
             user = User.query.filter_by(email=google_email).first()
             
+            # Get refresh token if available
+            refresh_token = token_data.get("refresh_token")
+            
             if not user:
                 # User doesn't exist - create a new account automatically
                 # Split name into first and last name if available
@@ -303,7 +312,12 @@ def google_callback():
                         password=None,  # No password for Google-based accounts
                         first_name=first_name,
                         profile_picture_url=google_picture,
-                        consent_given=True
+                        consent_given=True,
+                        google_id=google_id,
+                        google_email=google_email,
+                        google_name=google_name,
+                        google_access_token=access_token,
+                        google_refresh_token=refresh_token
                     )
                     db.session.add(new_user)
                     db.session.commit()
@@ -318,18 +332,33 @@ def google_callback():
                         user = User.query.filter_by(email=google_email).first()
                         if user:
                             print(f"✅ Found existing user: {google_email}")
+                            # Update Google credentials for existing user
+                            user.google_id = google_id
+                            user.google_email = google_email
+                            user.google_name = google_name
+                            user.google_access_token = access_token
+                            if refresh_token:
+                                user.google_refresh_token = refresh_token
+                            db.session.commit()
                         else:
                             raise db_error
                     else:
                         raise db_error
             else:
-                # User exists - update profile picture if available
+                # User exists - update profile picture and Google credentials
                 try:
                     if google_picture and not user.profile_picture_url:
                         user.profile_picture_url = google_picture
                     if google_name and not user.first_name:
                         name_parts = google_name.split(" ", 1)
                         user.first_name = name_parts[0] if name_parts else None
+                    # Update Google credentials
+                    user.google_id = google_id
+                    user.google_email = google_email
+                    user.google_name = google_name
+                    user.google_access_token = access_token
+                    if refresh_token:
+                        user.google_refresh_token = refresh_token
                     db.session.commit()
                     print(f"✅ Logged in existing user with Google: {google_email}")
                 except Exception as db_error:
@@ -2177,6 +2206,30 @@ def unlink_spotify():
         return jsonify({"error": "Failed to unlink Spotify account", "details": str(e)}), 500
 
 
+@app.route('/api/settings/google/unlink', methods=['DELETE'])
+@jwt_required()
+def unlink_google():
+    """Unlink Google account from user"""
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
+    try:
+        # Clear Google-related fields
+        user.google_id = None
+        user.google_email = None
+        user.google_name = None
+        user.google_access_token = None
+        user.google_refresh_token = None
+        
+        db.session.commit()
+        return jsonify({"message": "Google account unlinked successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Failed to unlink Google account", "details": str(e)}), 500
+
+
 @app.route('/api/profile', methods=['GET'])
 @jwt_required()
 def get_profile():
@@ -2199,7 +2252,13 @@ def get_profile():
             "id": user.spotify_id,
             "name": user.spotify_display_name,
             "email": user.spotify_email
-        } if user.spotify_access_token else None
+        } if user.spotify_access_token else None,
+        "googleLinked": bool(user.google_id),
+        "googleUser": {
+            "id": user.google_id,
+            "name": user.google_name,
+            "email": user.google_email
+        } if user.google_id else None
     }), 200
 
 

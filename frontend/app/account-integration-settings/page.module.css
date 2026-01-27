@@ -522,3 +522,61 @@
   transform: translateX(17.73px);
 }
 
+/* Spotify connected banner */
+.spotifyConnectedBanner {
+  margin-top: 16px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.spotifyIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #1DB954;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  flex-shrink: 0;
+  box-shadow: 0 0 8px rgba(29, 185, 84, 0.7);
+}
+
+.spotifyText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.spotifyLabel {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.spotifyName {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  color: #ffffff;
+}
+
+.spotifyEmail {
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.75);
+}
+

@@ -27,6 +27,7 @@ export default function AccountIntegrationSettings() {
   useEffect(() => {
     if (user) {
       setSpotifyLinked(user.spotifyLinked)
+      setGoogleLinked(user.googleLinked || false)
       fetchProfile()
     }
   }, [user])
@@ -166,6 +167,24 @@ export default function AccountIntegrationSettings() {
       console.error('Failed to get Spotify login URL:', error)
       alert(error.message || 'Failed to initiate Spotify linking')
       setIsLinking(false)
+    }
+  }
+
+  const handleGoogleUnlink = async () => {
+    if (!googleLinked) {
+      // Google account is not linked, nothing to do
+      return
+    }
+
+    // Unlink Google
+    try {
+      await settingsAPI.unlinkGoogle()
+      await refreshUser()
+      setGoogleLinked(false)
+      alert('Google account unlinked successfully')
+    } catch (error: any) {
+      console.error('Failed to unlink Google:', error)
+      alert(error.message || 'Failed to unlink Google account')
     }
   }
 
@@ -366,13 +385,17 @@ export default function AccountIntegrationSettings() {
               )}
             </div>
             {spotifyLinked && user?.spotifyUser && (
-              <div style={{ marginTop: '1rem', padding: '0.5rem', background: '#f0f0f0', borderRadius: '5px' }}>
-                <p style={{ margin: 0, fontSize: '0.9rem' }}>
-                  Connected as: <strong>{user.spotifyUser.name}</strong>
-                </p>
-                <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.8rem', color: '#666' }}>
-                  {user.spotifyUser.email}
-                </p>
+              <div className={styles.spotifyConnectedBanner}>
+                <div className={styles.spotifyIcon}>
+                  <span>S</span>
+                </div>
+                <div className={styles.spotifyText}>
+                  <span className={styles.spotifyLabel}>Connected with Spotify</span>
+                  <span className={styles.spotifyName}>{user.spotifyUser.name}</span>
+                  {user.spotifyUser.email && (
+                    <span className={styles.spotifyEmail}>{user.spotifyUser.email}</span>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -385,11 +408,21 @@ export default function AccountIntegrationSettings() {
                 <input
                   type="checkbox"
                   checked={googleLinked}
-                  onChange={(e) => setGoogleLinked(e.target.checked)}
+                  onChange={handleGoogleUnlink}
                 />
                 <span className={styles.toggleSlider}></span>
               </label>
             </div>
+            {googleLinked && user?.googleUser && (
+              <div style={{ marginTop: '1rem', padding: '0.5rem', background: '#f0f0f0', borderRadius: '5px' }}>
+                <p style={{ margin: 0, fontSize: '0.9rem' }}>
+                  Connected as: <strong>{user.googleUser.name || user.googleUser.email}</strong>
+                </p>
+                <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.8rem', color: '#666' }}>
+                  {user.googleUser.email}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </main>
