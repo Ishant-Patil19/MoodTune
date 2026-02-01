@@ -11,11 +11,15 @@ import HorizontalCarousel from '@/components/HorizontalCarousel'
 import styles from './page.module.css'
 
 interface Song {
+  id?: string
   title: string
   artist: string
+  subtitle?: string
   album?: string
   spotifyUri?: string
+  spotifyId?: string
   url?: string
+  imageUrl?: string
   source: string
   emotion?: string
   language?: string
