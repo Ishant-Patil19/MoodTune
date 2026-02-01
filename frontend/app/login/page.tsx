@@ -2,11 +2,11 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import styles from './page.module.css'
 
-export default function Login() {
+function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isLoadingGoogle, setIsLoadingGoogle] = useState(false)
@@ -131,6 +131,14 @@ export default function Login() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function Login() {
+  return (
+    <Suspense fallback={<div className={styles.container} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>Loading...</div>}>
+      <LoginContent />
+    </Suspense>
   )
 }
 

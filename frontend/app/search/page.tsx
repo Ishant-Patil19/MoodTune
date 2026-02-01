@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { useState, useEffect, useRef } from 'react'
+import { Suspense, useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useMusicPlayer } from '@/contexts/MusicPlayerContext'
 import { musicAPI, authAPI } from '@/lib/api'
@@ -23,7 +23,7 @@ interface Song {
   imageUrl?: string
 }
 
-export default function SearchResults() {
+function SearchContent() {
   const { isAuthenticated, loading: authLoading, user } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -549,5 +549,13 @@ export default function SearchResults() {
       </main>
 
     </div>
+  )
+}
+
+export default function SearchResults() {
+  return (
+    <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>Loading...</div>}>
+      <SearchContent />
+    </Suspense>
   )
 }

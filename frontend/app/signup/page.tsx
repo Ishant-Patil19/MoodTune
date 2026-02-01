@@ -2,11 +2,11 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import styles from './page.module.css'
 
-export default function Signup() {
+function SignupContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [googleLoading, setGoogleLoading] = useState(false)
@@ -125,6 +125,14 @@ export default function Signup() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function Signup() {
+  return (
+    <Suspense fallback={<div className={styles.container} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>Loading...</div>}>
+      <SignupContent />
+    </Suspense>
   )
 }
 
