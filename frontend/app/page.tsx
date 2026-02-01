@@ -108,8 +108,8 @@ export default function Home() {
       // Extract IDs from trending songs to exclude from industry songs
       const trendingSongIds = songs
         .slice(0, 10)
-        .map(song => song.id || song.spotifyId || song.spotifyUri || song.url)
-        .filter(id => id && !id.toString().startsWith('default-'))
+        .map((song: { id?: string; spotifyId?: string; spotifyUri?: string; url?: string }) => song.id || song.spotifyId || song.spotifyUri || song.url)
+        .filter((id: string | undefined): id is string => !!id && !id.toString().startsWith('default-'))
       
       // Fetch other content in parallel, but industry songs with exclude parameter
       const [industrySongsData, playlists, artistsData] = await Promise.all([
@@ -258,11 +258,11 @@ export default function Home() {
           <HorizontalCarousel
             title="Recommended Songs - Most Heard Today"
             items={trendingSongs.map((song, index) => ({
+              ...song,
               id: song.id || song.spotifyUri || song.url || `song-${index}`,
               title: song.title,
               subtitle: song.subtitle || song.artist || 'Unknown Artist',
-              imageUrl: song.imageUrl || null,
-              ...song
+              imageUrl: song.imageUrl ?? undefined
             }))}
             onItemClick={(item) => {
               handleSongClick(item as Song)
@@ -292,7 +292,7 @@ export default function Home() {
             title="Artist List"
             items={artists.map((artist) => ({
               ...artist,
-              imageUrl: artist.imageUrl || null
+              imageUrl: artist.imageUrl ?? undefined
             }))}
             onItemClick={(item) => {
               handleArtistClick(item as Artist)
@@ -325,7 +325,7 @@ export default function Home() {
               ...song,
               id: song.id || song.spotifyUri || song.url || `industry-song-${index}`,
               subtitle: song.subtitle || song.artist || 'Unknown Artist',
-              imageUrl: song.imageUrl || null
+              imageUrl: song.imageUrl ?? undefined
             }))}
             onItemClick={(item) => {
               handleSongClick(item as Song)
@@ -353,9 +353,9 @@ export default function Home() {
         ) : featuredPlaylists.length > 0 ? (
           <HorizontalCarousel
             title="Playlists"
-            items={featuredPlaylists.map((playlist, index) => ({
+            items={featuredPlaylists.map((playlist) => ({
               ...playlist,
-              imageUrl: playlist.imageUrl || null
+              imageUrl: playlist.imageUrl ?? undefined
             }))}
             onItemClick={(item) => {
               handlePlaylistClick(item as Playlist)
