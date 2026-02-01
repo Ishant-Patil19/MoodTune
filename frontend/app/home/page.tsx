@@ -1172,11 +1172,11 @@ export default function HomeAfterLogin() {
           <HorizontalCarousel
             title={`Recommended Songs${detectedEmotion ? ` (${detectedEmotion})` : ' - Most Heard Today'}${wellbeingMode ? ' 💚 Well-being Mode' : ''}${selectedLanguage ? ` - ${selectedLanguage}` : ''}`}
             items={recommendations.map((song, index) => ({
+              ...song,
               id: song.id || song.spotifyUri || song.url || `song-${index}`,
               title: song.title,
               subtitle: song.subtitle || song.artist,
-              imageUrl: song.imageUrl || null, // Use null instead of fallback to show placeholder
-              ...song
+              imageUrl: song.imageUrl ?? undefined
             }))}
             onItemClick={(item) => {
               handleSongClick(item, recommendations)
@@ -1227,7 +1227,8 @@ export default function HomeAfterLogin() {
             title="Industry"
             items={industrySongs.map((song, index) => ({
               ...song,
-              subtitle: song.subtitle || song.artist || ''
+              subtitle: song.subtitle || song.artist || '',
+              imageUrl: song.imageUrl ?? undefined
             }))}
             onItemClick={(item) => {
               handleSongClick(item, industrySongs)
