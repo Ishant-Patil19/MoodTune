@@ -546,7 +546,7 @@ export default function HomeAfterLogin() {
     if (canEmbed) {
       // Build play queue from context (recommendations, trending, search results)
       const queue = context && context.length > 0 
-        ? context.map(s => ({
+        ? context.map((s: Song & { id?: string; spotifyId?: string; subtitle?: string; imageUrl?: string }) => ({
             id: s.id || s.spotifyUri || s.url,
             title: s.title,
             artist: s.artist || s.subtitle || 'Unknown Artist',
