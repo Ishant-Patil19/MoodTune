@@ -277,7 +277,7 @@ export default function HomeAfterLogin() {
       // Fetch industry songs separately, excluding trending song IDs to ensure different content
       const trendingSongIds = songs
         .slice(0, 15)
-        .map(s => s.id || s.spotifyId || s.spotifyUri)
+        .map((s: { id?: string; spotifyId?: string; spotifyUri?: string }) => s.id || s.spotifyId || s.spotifyUri)
         .filter(Boolean)
       
       try {
