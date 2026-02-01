@@ -10,16 +10,17 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import styles from './page.module.css'
 
 interface Song {
+  id?: string
   title: string
   artist: string
   album?: string
   spotifyUri?: string
+  spotifyId?: string
   url?: string
   source: string
   emotion?: string
   language?: string
   imageUrl?: string
-  id?: string
 }
 
 export default function SearchResults() {
