@@ -28,7 +28,12 @@ except ImportError:
 
 app = Flask(__name__)
 app.config.from_object(Config)
-CORS(app, origins=["http://localhost:3000", "http://127.0.0.1:3000"], supports_credentials=True)
+# Allow frontend origin - use FRONTEND_URL for production, localhost for dev
+_frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+_cors_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
+if _frontend_url and _frontend_url not in _cors_origins:
+    _cors_origins.append(_frontend_url.rstrip("/"))
+CORS(app, origins=_cors_origins, supports_credentials=True)
 
 db.init_app(app)
 jwt = JWTManager(app)
