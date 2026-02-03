@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { API_BASE_URL } from '@/lib/api'
 import styles from './page.module.css'
 
 function LoginContent() {
@@ -38,7 +39,7 @@ function LoginContent() {
   const handleGoogleLogin = async () => {
     setIsLoadingGoogle(true)
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/google/login`)
+      const response = await fetch(`${API_BASE_URL}/api/google/login`)
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))

@@ -1,5 +1,5 @@
-// API Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+// API Configuration – set NEXT_PUBLIC_API_URL in Vercel to your backend URL (e.g. Render)
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 // Helper function to get auth token from localStorage
 const getAuthToken = (): string | null => {

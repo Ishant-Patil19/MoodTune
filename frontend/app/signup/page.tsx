@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { API_BASE_URL } from '@/lib/api'
 import styles from './page.module.css'
 
 function SignupContent() {
@@ -12,25 +13,24 @@ function SignupContent() {
   const [googleLoading, setGoogleLoading] = useState(false)
 
   useEffect(() => {
-    // Handle Google signup callback
-    const googleToken = searchParams.get('google_token')
-    const error = searchParams.get('error')
+    // Handle Google signup callback – read from URL for hydration-safe param access
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const googleToken = params.get('google_token') ?? searchParams.get('google_token')
+    const error = params.get('error') ?? searchParams.get('error')
 
     if (googleToken) {
-      // Store token and redirect to home
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('auth_token', googleToken)
-        // Redirect to home page
-        window.location.href = '/home'
-      }
-    } else if (error) {
-      const details = searchParams.get('details')
-      const errorMessage = details 
+      localStorage.setItem('auth_token', googleToken)
+      window.location.replace('/home')
+      return
+    }
+    if (error) {
+      const details = params.get('details') ?? searchParams.get('details')
+      const errorMessage = details
         ? `Google signup failed: ${error}. Details: ${details}`
         : `Google signup failed: ${error}`
       console.error('Google signup error:', error, details)
       alert(errorMessage)
-      // Clean URL
       router.replace('/signup')
     }
   }, [searchParams, router])
@@ -38,7 +38,7 @@ function SignupContent() {
   const handleGoogleSignup = async () => {
     setGoogleLoading(true)
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/google/login`)
+      const response = await fetch(`${API_BASE_URL}/api/google/login`)
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
