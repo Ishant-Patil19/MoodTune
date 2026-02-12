@@ -1,5 +1,6 @@
 // API Configuration – set NEXT_PUBLIC_API_URL in Vercel to your backend URL (e.g. Render)
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+console.log('🚀 [API] Configured API_BASE_URL:', API_BASE_URL);
 
 // Helper function to get auth token from localStorage
 const getAuthToken = (): string | null => {
@@ -74,6 +75,14 @@ export const authAPI = {
       localStorage.setItem('auth_token', data.token);
     }
     return data;
+  },
+
+  getGoogleLoginUrl: async () => {
+    const response = await apiRequest('/api/google/login');
+    if (!response.ok) {
+      throw new Error('Failed to get Google login URL');
+    }
+    return response.json();
   },
 
   logout: () => {
